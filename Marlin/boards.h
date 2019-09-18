@@ -159,6 +159,8 @@
 #define BOARD_FYSETC_F6_13      541
 #define BOARD_FYSETC_F6_14      542
 
+#define BOARD_HIPRECY_LEO       543
+
 #define MB(board) (defined(BOARD_##board) && MOTHERBOARD==BOARD_##board)
 
 #endif // __BOARDS_H
