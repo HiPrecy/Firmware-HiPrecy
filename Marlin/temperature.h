@@ -39,6 +39,10 @@
   #include "stepper.h"
 #endif
 
+#if ENABLED(TOUCH_LCD)
+#include "ultralcd.h"
+#endif
+
 #ifndef SOFT_PWM_SCALE
   #define SOFT_PWM_SCALE 0
 #endif
@@ -418,6 +422,10 @@ class Temperature {
       #if WATCH_HOTENDS
         start_watching_heater(HOTEND_INDEX);
       #endif
+
+      #if ENABLED(TOUCH_LCD)
+        myLcdEvt |= ((uint16_t)0x0001 << LCDEVT_DETAIL_EXTRUDER);//geo-f 
+	  #endif
     }
 
     FORCE_INLINE static bool isHeatingHotend(const uint8_t e) {
@@ -457,6 +465,10 @@ class Temperature {
         #if WATCH_THE_BED
           start_watching_bed();
         #endif
+
+        #if ENABLED(TOUCH_LCD)
+          myLcdEvt |= ((uint16_t)0x0001 << LCDEVT_DETAIL_EXTRUDER);
+	    #endif
       }
 
       #if WATCH_THE_BED

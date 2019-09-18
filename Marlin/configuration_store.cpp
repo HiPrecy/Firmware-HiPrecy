@@ -210,6 +210,17 @@ typedef struct SettingsDataStruct {
           lcd_preheat_bed_temp[2],                      // M145 S0 B
           lcd_preheat_fan_speed[2];                     // M145 S0 F
 
+  /*
+  #if ENABLED(FYSTLCD_V1)
+    int16_t lcd_preheat_hotend_temp[FILAMENT_OPE_CHOICES],                   // M145 S0 H
+            lcd_preheat_bed_temp[FILAMENT_OPE_CHOICES],                      // M145 S0 B
+            lcd_preheat_fan_speed[FILAMENT_OPE_CHOICES];                     // M145 S0 F
+  #else
+    int16_t lcd_preheat_hotend_temp[2],                   // M145 S0 H
+            lcd_preheat_bed_temp[2],                      // M145 S0 B
+            lcd_preheat_fan_speed[2];                     // M145 S0 F
+  #endif    
+  */
   //
   // PIDTEMP
   //
@@ -2079,7 +2090,7 @@ void MarlinSettings::reset() {
     #endif
     SERIAL_EOL();
 
-    #if ENABLED(ULTIPANEL)
+    #if ENABLED(ULTIPANEL)||ENABLED(FYSTLCD_V1)
 
       // Temperature units - for Ultipanel temperature options
 

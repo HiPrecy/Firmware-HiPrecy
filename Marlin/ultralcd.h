@@ -30,6 +30,11 @@
   bool lcd_detected();
   void lcd_update();
   void lcd_setalertstatusPGM(const char* message);
+#elif ENABLED(TOUCH_LCD)
+  void lcd_update();
+  void lcd_init();  
+  inline bool lcd_detected() { return true; }
+  inline void lcd_setalertstatusPGM(const char* message) { UNUSED(message); }
 #else
   inline void lcd_init() {}
   inline bool lcd_detected() { return true; }
@@ -196,6 +201,56 @@
     void wait_for_release();
   #endif
 
+#elif ENABLED(TOUCH_LCD) // TOUCH_LCD
+  #include "touch_lcd.h"
+	
+  #if HAS_SERVOS
+  #include "servo.h"
+  extern Servo servo[NUM_SERVOS];
+  #endif
+  
+  #define FILAMENT_OPE_CHOICES  8     // filaments types to operate
+	
+  extern uint16_t retPageId;
+  extern const float homing_feedrate_mm_s[];
+  extern int16_t lcd_preheat_hotend_temp[FILAMENT_OPE_CHOICES];
+  extern int16_t lcd_preheat_bed_temp[FILAMENT_OPE_CHOICES];
+  extern int16_t lcd_preheat_fan_speed[FILAMENT_OPE_CHOICES];	
+  
+  #define lcd_hasstatus() false
+  #define lcd_setstatusPGM(x)
+  #define lcd_status_printf_P(x,y,...)
+  #define lcd_buttons_update()
+  #define lcd_reset_alert_level()
+  #define lcd_detected()    true
+  #define lcd_refresh()
+  #define lcd_reset_status()
+
+  inline bool _enqueuecommand(const char* cmd, bool say_ok = false);
+  inline void line_to_current_position();
+
+  void dwin_popup(const char*msg, EM_POPUP_PAGE_TYPE pageChoose = 0, char funid = 0);
+  #define   lcd_popup(x,...)    dwin_popup(PSTR(x))
+
+  void kill_screen(const char *);
+  void dwin_popup_shutdown();
+  void lcd_startup_music();
+  void lcd_shutDown();
+  void lcd_setstatus(const char* message, const bool persist = false);
+  
+  #define   lcd_set_page(x)  if(currentPageId!=x){FysTLcd::ftSetPage(x); retPageId =x;currentPageId=x;}
+  #define   lcd_set_page_force(x) do{FysTLcd::ftSetPage(x); retPageId =x;currentPageId=x;} while(0)// geo-f
+  #define   lcd_pop_page(x)  if(currentPageId!=x){FysTLcd::ftSetPage(x); currentPageId=x;}
+	//#define   lcd_set_return_page(x) do{retPageId =x;} while(0) // geo-f
+		
+  inline void lcd_set_return_page(uint16_t x) { retPageId =x;}// geo-f
+  void lcd_set_return_page_print();
+  void lcd_set_page_print();
+  void lcd_set_page_main();
+  void lcd_showFilename();
+
+  extern uint8_t commands_in_queue;
+  
 #else // MALYAN_LCD or no LCD
 
   constexpr bool lcd_wait_for_move = false;
@@ -237,7 +292,7 @@
   extern volatile uint8_t buttons;  // The last-checked buttons in a bit array.
   void lcd_buttons_update();
 
-#else
+#elif DISABLED(TOUCH_LCD)
 
   inline void lcd_buttons_update() {}
 
@@ -262,4 +317,15 @@
   void lcd_reselect_last_file();
 #endif
 
+#if ENABLED(TOUCH_LCD)
+
+  #define LCDEVT_IF_CONTINE_PRINT             0
+  #define LCDEVT_READY_CONTINE_PRINT          1
+  #define LCDEVT_DETAIL_EXTRUDER              2
+  #define LCDEVT_AUTOPID_STOP                 3
+  #define LCDEVT_LEVELING_COMPLETE            4
+  #define LCDEVT_PRINTING_COMPLETE            5
+  extern uint16_t myLcdEvt;
+
+#endif
 #endif // ULTRALCD_H

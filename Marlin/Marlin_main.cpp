@@ -365,6 +365,10 @@
        G38_endstop_hit = false;
 #endif
 
+#if ENABLED(TOUCH_LCD)
+  uint16_t myLcdEvt = 0x0000;
+#endif
+
 #if ENABLED(AUTO_BED_LEVELING_UBL)
   #include "ubl.h"
 #endif
@@ -7131,6 +7135,8 @@ inline void gcode_M17() {
 
     #if ENABLED(ULTIPANEL)
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_WAIT_FOR_NOZZLES_TO_HEAT, mode);
+    #elif ENABLED(TOUCH_LCD)
+      dwin_popup(PSTR("\n  Heating nozzle,Please wait..."), EPPT_INFO_WAITING);    
     #else
       UNUSED(mode);
     #endif
@@ -7167,6 +7173,10 @@ inline void gcode_M17() {
       #if ENABLED(ULTIPANEL)
         if (show_lcd) // Show status screen
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_STATUS);
+      #elif ENABLED(TOUCH_LCD)
+        if (show_lcd) { // Show status screen 
+          dwin_popup(PSTR("     Target temperture\n     Too low for\n     filament load"), EPPT_INFO_POPUP);
+        }
       #endif
 
       return false;
@@ -7176,7 +7186,10 @@ inline void gcode_M17() {
       #if ENABLED(ULTIPANEL)
         if (show_lcd) // Show "insert filament"
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_INSERT, mode);
-      #endif
+        #elif ENABLED(TOUCH_LCD)
+        	dwin_popup(PSTR("Insert filament and press button to continue...") , EPPT_INFO_POPUP);
+        #endif
+
       SERIAL_ECHO_START();
       SERIAL_ECHOLNPGM(MSG_FILAMENT_CHANGE_INSERT);
 
@@ -7200,6 +7213,9 @@ inline void gcode_M17() {
     #if ENABLED(ULTIPANEL)
       if (show_lcd) // Show "wait for load" message
         lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_LOAD, mode);
+    #elif ENABLED(TOUCH_LCD)
+      if (show_lcd) // Show "wait for load" message
+        dwin_popup(PSTR("\n    Wait for filament load."), EPPT_INFO_WAITING);
     #endif
 
     // Slow Load filament
@@ -7224,8 +7240,10 @@ inline void gcode_M17() {
       #if ENABLED(ULTIPANEL)
         if (show_lcd)
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_CONTINUOUS_PURGE);
-      #endif
-
+      #elif ENABLED(TOUCH_LCD)
+				if (show_lcd)
+      		dwin_popup(PSTR("\n    Wait for filament purge."), EPPT_INFO_WAITING);
+   		#endif
       wait_for_user = true;
       for (float purge_count = purge_length; purge_count > 0 && wait_for_user; --purge_count)
         do_pause_e_move(1, ADVANCED_PAUSE_PURGE_FEEDRATE);
@@ -7239,6 +7257,9 @@ inline void gcode_M17() {
           #if ENABLED(ULTIPANEL)
             if (show_lcd)
               lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_PURGE, mode);
+          #elif ENABLED(TOUCH_LCD)
+						if (show_lcd)
+      				dwin_popup(PSTR("\n    Wait for filament purge."), EPPT_INFO_WAITING);
           #endif
 
           // Extrude filament to get into hotend
@@ -7254,11 +7275,19 @@ inline void gcode_M17() {
             while (advanced_pause_menu_response == ADVANCED_PAUSE_RESPONSE_WAIT_FOR) idle(true);
             KEEPALIVE_STATE(IN_HANDLER);
           }
+        #elif ENABLED(TOUCH_LCD)
+					if (show_lcd) {
+						KEEPALIVE_STATE(PAUSED_FOR_USER);
+            wait_for_user = false;
+            dwin_popup(PSTR("CHANGE OPTIONS:"), EPPT_INFO_OPTION, 1);
+            while (advanced_pause_menu_response == ADVANCED_PAUSE_RESPONSE_WAIT_FOR) idle(true);
+            KEEPALIVE_STATE(IN_HANDLER);
+					}
         #endif
 
         // Keep looping if "Purge More" was selected
       } while (
-        #if ENABLED(ULTIPANEL)
+        #if ENABLED(ULTIPANEL)|| ENABLED(TOUCH_LCD)
           show_lcd && advanced_pause_menu_response == ADVANCED_PAUSE_RESPONSE_EXTRUDE_MORE
         #else
           0
@@ -7287,16 +7316,24 @@ inline void gcode_M17() {
       #if ENABLED(ULTIPANEL)
         if (show_lcd) // Show status screen
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_STATUS);
+      #elif ENABLED(TOUCH_LCD)
+			  if (show_lcd) {	// Show status screen 
+          dwin_popup(PSTR("     Target temperture\n     Too low for\n     filament unload"), EPPT_INFO_POPUP);
+			  }
       #endif
 
       return false;
     }
 
-    #if DISABLED(ULTIPANEL)
+    #if DISABLED(ULTIPANEL) && DISABLED(TOUCH_LCD)
       UNUSED(show_lcd);
     #else
       if (show_lcd)
-        lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_UNLOAD, mode);
+	  	#if ENABLED(ULTIPANEL)
+        	lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_UNLOAD, mode);
+		#elif ENABLED(TOUCH_LCD)
+			dwin_popup(PSTR("\n    Wait for filament unload"), EPPT_INFO_WAITING);
+		#endif
     #endif
 
     // Retract filament
@@ -7357,6 +7394,10 @@ inline void gcode_M17() {
         if (show_lcd) // Show status screen
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_STATUS);
         LCD_MESSAGEPGM(MSG_M600_TOO_COLD);
+      #elif ENABLED(TOUCH_LCD)
+			  if (show_lcd) {	// Show status screen 
+          dwin_popup(PSTR("\n Too cold for filament operation"), EPPT_INFO_POPUP);
+			  }
       #endif
 
       return false; // unable to reach safe temperature
@@ -7407,7 +7448,10 @@ inline void gcode_M17() {
 
     #if ENABLED(ULTIPANEL)
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_INSERT);
+    #elif ENABLED(TOUCH_LCD)
+    	dwin_popup(PSTR("\n       Insert filament and\n    press button to continue..."),EPPT_INFO_POPUP);
     #endif
+
     SERIAL_ECHO_START();
     SERIAL_ERRORLNPGM(MSG_FILAMENT_CHANGE_INSERT);
 
@@ -7438,7 +7482,10 @@ inline void gcode_M17() {
       if (nozzle_timed_out) {
         #if ENABLED(ULTIPANEL)
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_CLICK_TO_HEAT_NOZZLE);
-        #endif
+      #elif ENABLED(TOUCH_LCD)
+          dwin_popup(PSTR("\n    The nozzle has cool down \npress button to reheat the nozzle."),EPPT_INFO_POPUP);
+      #endif
+
         SERIAL_ECHO_START();
         #if ENABLED(ULTIPANEL) && ENABLED(EMERGENCY_PARSER)
           SERIAL_ERRORLNPGM(MSG_FILAMENT_CHANGE_HEAT);
@@ -7459,7 +7506,10 @@ inline void gcode_M17() {
 
         #if ENABLED(ULTIPANEL)
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_INSERT);
+        #elif ENABLED(TOUCH_LCD)
+    			dwin_popup(PSTR("\n       Insert filament and\n    press button to continue..."),EPPT_INFO_POPUP);
         #endif
+
         SERIAL_ECHO_START();
         #if ENABLED(ULTIPANEL) && ENABLED(EMERGENCY_PARSER)
           SERIAL_ERRORLNPGM(MSG_FILAMENT_CHANGE_INSERT);
@@ -7524,8 +7574,10 @@ inline void gcode_M17() {
     #if ENABLED(ULTIPANEL)
       // "Wait for print to resume"
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_RESUME);
+    #elif ENABLED(TOUCH_LCD)
+      dwin_popup(PSTR("\n   Wait for print to resume."),EPPT_INFO_WAITING);
     #endif
-
+    
     // Intelligent resuming
     #if ENABLED(FWRETRACT)
       // If retracted before goto pause
@@ -7553,6 +7605,8 @@ inline void gcode_M17() {
     #if ENABLED(ULTIPANEL)
       // Show status screen
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_STATUS);
+    #elif ENABLED(TOUCH_LCD)
+      dwin_popup_shutdown();
     #endif
 
     #ifdef ACTION_ON_RESUME
@@ -11151,6 +11205,8 @@ inline void gcode_M502() {
     // Show initial message
     #if ENABLED(ULTIPANEL)
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_INIT, ADVANCED_PAUSE_MODE_PAUSE_PRINT, target_extruder);
+    #elif ENABLED(TOUCH_LCD)			
+      dwin_popup(PSTR("        Filament runout!\nWait for start of filament change."),EPPT_INFO_WAITING);
     #endif
 
     #if ENABLED(HOME_BEFORE_FILAMENT_CHANGE)
@@ -15142,7 +15198,7 @@ void kill(const char* lcd_msg) {
   thermalManager.disable_all_heaters();
   disable_all_steppers();
 
-  #if ENABLED(ULTRA_LCD)
+  #if ENABLED(ULTRA_LCD)|| ENABLED(TOUCH_LCD)
     kill_screen(lcd_msg);
   #else
     UNUSED(lcd_msg);
