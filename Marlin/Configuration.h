@@ -131,7 +131,7 @@
 // The following define selects which electronics board you have.
 // Please choose the name from boards.h that matches your setup
 #ifndef MOTHERBOARD
-  #define MOTHERBOARD BOARD_RAMPS_14_EFB
+  #define MOTHERBOARD BOARD_HIPRECY_LEO
 #endif
 
 // Optional custom name for your RepStrap or other custom machine
@@ -1260,6 +1260,30 @@
 #define PREHEAT_2_TEMP_HOTEND 240
 #define PREHEAT_2_TEMP_BED    110
 #define PREHEAT_2_FAN_SPEED     0 // Value from 0 to 255
+
+#define PREHEAT_3_TEMP_HOTEND 230 // PVA
+#define PREHEAT_3_TEMP_BED     70
+#define PREHEAT_3_FAN_SPEED     0  
+
+#define PREHEAT_4_TEMP_HOTEND 240 // FLEX
+#define PREHEAT_4_TEMP_BED     50
+#define PREHEAT_4_FAN_SPEED     0 
+
+#define PREHEAT_5_TEMP_HOTEND 230 // PET
+#define PREHEAT_5_TEMP_BED     85
+#define PREHEAT_5_FAN_SPEED     0 
+
+#define PREHEAT_6_TEMP_HOTEND 220 // HIPS
+#define PREHEAT_6_TEMP_BED    100
+#define PREHEAT_6_FAN_SPEED     0 
+
+#define PREHEAT_7_TEMP_HOTEND 254 // PP
+#define PREHEAT_7_TEMP_BED    100
+#define PREHEAT_7_FAN_SPEED     0 
+
+#define PREHEAT_8_TEMP_HOTEND 200 // CUSTOM
+#define PREHEAT_8_TEMP_BED     70
+#define PREHEAT_8_FAN_SPEED     0 
 
 /**
  * Nozzle Park
