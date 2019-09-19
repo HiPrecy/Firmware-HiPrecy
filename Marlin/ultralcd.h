@@ -25,6 +25,8 @@
 
 #include "MarlinConfig.h"
 
+#define FILAMENTS  8     // filaments types to operate
+
 #if ENABLED(ULTRA_LCD) || ENABLED(MALYAN_LCD)
   void lcd_init();
   bool lcd_detected();
@@ -100,7 +102,9 @@
     typedef void (*screenFunc_t)();
     typedef void (*menuAction_t)();
 
-    extern int16_t lcd_preheat_hotend_temp[2], lcd_preheat_bed_temp[2], lcd_preheat_fan_speed[2];
+    extern int16_t lcd_preheat_hotend_temp[FILAMENTS],
+                   lcd_preheat_bed_temp[[FILAMENTS]],
+                   lcd_preheat_fan_speed[[FILAMENTS]];
 
     #if ENABLED(AUTO_BED_LEVELING_UBL) || ENABLED(G26_MESH_VALIDATION)
       extern bool lcd_external_control;
@@ -208,14 +212,12 @@
   #include "servo.h"
   extern Servo servo[NUM_SERVOS];
   #endif
-  
-  #define FILAMENT_OPE_CHOICES  8     // filaments types to operate
 	
   extern uint16_t retPageId;
   extern const float homing_feedrate_mm_s[];
-  extern int16_t lcd_preheat_hotend_temp[FILAMENT_OPE_CHOICES];
-  extern int16_t lcd_preheat_bed_temp[FILAMENT_OPE_CHOICES];
-  extern int16_t lcd_preheat_fan_speed[FILAMENT_OPE_CHOICES];	
+  extern int16_t lcd_preheat_hotend_temp[FILAMENTS];
+  extern int16_t lcd_preheat_bed_temp[FILAMENTS];
+  extern int16_t lcd_preheat_fan_speed[FILAMENTS];
   
   #define lcd_hasstatus() false
   #define lcd_setstatusPGM(x)
@@ -238,9 +240,9 @@
   void lcd_shutDown();
   void lcd_setstatus(const char* message, const bool persist = false);
   
-  #define   lcd_set_page(x)  if(currentPageId!=x){FysTLcd::ftSetPage(x); retPageId =x;currentPageId=x;}
-  #define   lcd_set_page_force(x) do{FysTLcd::ftSetPage(x); retPageId =x;currentPageId=x;} while(0)// geo-f
-  #define   lcd_pop_page(x)  if(currentPageId!=x){FysTLcd::ftSetPage(x); currentPageId=x;}
+  #define   lcd_set_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;}
+  #define   lcd_set_page_force(x) do{touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;} while(0)
+  #define   lcd_pop_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); currentPageId=x;}
 	//#define   lcd_set_return_page(x) do{retPageId =x;} while(0) // geo-f
 		
   inline void lcd_set_return_page(uint16_t x) { retPageId =x;}// geo-f

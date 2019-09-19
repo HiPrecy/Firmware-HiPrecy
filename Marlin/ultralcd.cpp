@@ -147,7 +147,7 @@ uint16_t max_display_update_time = 0;
   constexpr int8_t menu_bottom = LCD_HEIGHT - (TALL_FONT_CORRECTION);
 
   // Initialized by settings.load()
-  int16_t lcd_preheat_hotend_temp[2], lcd_preheat_bed_temp[2], lcd_preheat_fan_speed[2];
+  int16_t lcd_preheat_hotend_temp[FILAMENTS], lcd_preheat_bed_temp[FILAMENTS], lcd_preheat_fan_speed[FILAMENTS];
 
   #if ENABLED(AUTO_BED_LEVELING_UBL) || ENABLED(G26_MESH_VALIDATION)
     bool lcd_external_control; // = false
