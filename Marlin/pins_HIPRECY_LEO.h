@@ -28,7 +28,7 @@
   #error "Oops!  Make sure you have 'HIPRECY_LEO' selected from the 'Tools -> Boards' menu."
 #endif
 
-#if MB(FYSETC_F6_14)
+#if MB(HIPRECY_LEO)
   #define BOARD_NAME "HIPRECY_LEO"
 #endif
 
@@ -251,15 +251,3 @@
     #endif
   #endif
 #endif
-
-#if ENABLED(FYS_STORAGE_SUPPORT)
-  #define CH376_SPI_MOSI_PIN  51       // SPI Master Out Slave In pin
-  #define CH376_SPI_MISO_PIN  50       // SPI Master In Slave Out pin
-  #define CH376_SPI_SCK_PIN   52       // SPI Clock pin
-  #define CH376_SPI_SS_PIN    53
-  #define CH376_INT_PIN       31
-  #define CH376_BUSY_PIN      33
-  #define CH376_RESET_PIN     49
-#endif
-
-
