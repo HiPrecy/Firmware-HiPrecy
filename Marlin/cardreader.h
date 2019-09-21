@@ -70,7 +70,8 @@ public:
 
   void ls();
   void chdir(const char *relpath);
-  int8_t updir();
+  int8_t updir();  
+  int8_t isIndir();
   void setroot();
 
   const char* diveToFile(SdFile*& curDir, const char * const path, const bool echo);

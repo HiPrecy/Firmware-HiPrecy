@@ -632,6 +632,10 @@ int8_t CardReader::updir() {
   return workDirDepth;
 }
 
+int8_t CardReader::isIndir() {
+  return workDirDepth>0;
+}
+
 void CardReader::setroot() {
   /*if (!workDir.openRoot(&volume)) {
     SERIAL_ECHOLNPGM(MSG_SD_WORKDIR_FAIL);
