@@ -36,7 +36,7 @@
   void lcd_update();
   void lcd_init();  
   inline bool lcd_detected() { return true; }
-  inline void lcd_setalertstatusPGM(const char* message) { UNUSED(message); }
+  void lcd_setalertstatusPGM(const char* message);
 #else
   inline void lcd_init() {}
   inline bool lcd_detected() { return true; }
@@ -219,14 +219,14 @@
   extern int16_t lcd_preheat_bed_temp[FILAMENTS];
   extern int16_t lcd_preheat_fan_speed[FILAMENTS];
   
-  #define lcd_hasstatus() false
-  #define lcd_setstatusPGM(x)
-  #define lcd_status_printf_P(x,y,...)
-  #define lcd_buttons_update()
-  #define lcd_reset_alert_level()
+  bool lcd_hasstatus();
+  void lcd_setstatusPGM(const char* message, const int8_t level=0);  
+  #define lcd_buttons_update()  
   #define lcd_detected()    true
   #define lcd_refresh()
-  #define lcd_reset_status()
+  void lcd_reset_status();
+  void lcd_status_printf_P(const uint8_t level, const char * const fmt, ...);
+  void lcd_reset_alert_level();
 
   inline bool _enqueuecommand(const char* cmd, bool say_ok = false);
   inline void line_to_current_position();
@@ -243,9 +243,8 @@
   #define   lcd_set_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;}
   #define   lcd_set_page_force(x) do{touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;} while(0)
   #define   lcd_pop_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); currentPageId=x;}
-	//#define   lcd_set_return_page(x) do{retPageId =x;} while(0) // geo-f
-		
-  inline void lcd_set_return_page(uint16_t x) { retPageId =x;}// geo-f
+	//#define   lcd_set_return_page(x) do{retPageId =x;} while(0)		
+  inline void lcd_set_return_page(uint16_t x) { retPageId =x;}
   void lcd_set_return_page_print();
   void lcd_set_page_print();
   void lcd_set_page_main();
