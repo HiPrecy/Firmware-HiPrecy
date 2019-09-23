@@ -1213,7 +1213,7 @@ inline void get_serial_commands() {
               #endif
             #endif // PRINTER_EVENT_LEDS
 
-            #if ENABLED(FYSTLCD_V1)
+            #if ENABLED(TOUCH_LCD)
               lcd_set_page_main();
             #endif
           }
