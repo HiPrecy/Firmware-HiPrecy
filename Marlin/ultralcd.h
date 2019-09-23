@@ -218,6 +218,7 @@
   extern int16_t lcd_preheat_hotend_temp[FILAMENTS];
   extern int16_t lcd_preheat_bed_temp[FILAMENTS];
   extern int16_t lcd_preheat_fan_speed[FILAMENTS];
+  extern bool touch_lcd_aborting_print;
   
   bool lcd_hasstatus();
   void lcd_setstatusPGM(const char* message, const int8_t level=0);  

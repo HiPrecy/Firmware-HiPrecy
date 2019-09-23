@@ -115,6 +115,8 @@ static touch_lcd myFysTLcd;
 static int16_t oldFanSpeed = 0;
 static uint16_t oldFeedratePercentage = 0;
 
+bool touch_lcd_aborting_print = false;
+
 static void sendParam_Tune();
 static void readParam_Tune();
 static void sendParam_Tune_fan();
@@ -1301,6 +1303,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
   void lcd_sdcard_stop() {
     wait_for_heatup = wait_for_user = false;
     card.abort_sd_printing = true;
+    touch_lcd_aborting_print = true;
     lcd_setstatusPGM(PSTR(MSG_PRINT_ABORTED), -1);
     //lcd_return_to_status();
     #if FYSTLCD_PAGE_EXIST(MAIN)
@@ -1317,7 +1320,7 @@ static void dwin_on_cmd_print(uint16_t tval)
     if (card.cardOK) {      
       switch (tval) {
         case VARVAL_PRINT_FILELIST:
-          if(card.abort_sd_printing) return ;
+          if(touch_lcd_aborting_print) return ;
 
           if (print_job_timer.isRunning() || print_job_timer.isPaused()) {
             #if FYSTLCD_PAGE_EXIST(PRINT)
