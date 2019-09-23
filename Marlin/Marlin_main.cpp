@@ -1212,6 +1212,10 @@ inline void get_serial_commands() {
                 leds.set_off();
               #endif
             #endif // PRINTER_EVENT_LEDS
+
+            #if ENABLED(FYSTLCD_V1)
+              lcd_set_page_main();
+            #endif
           }
         }
         else if (n == -1) {
