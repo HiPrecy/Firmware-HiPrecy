@@ -102,7 +102,7 @@
         static void ftPuts(const uint16_t& ftAddr, const char*str, uint8_t len = 0);
         static void ftPutsPGM(const uint16_t& ftAddr, const char*str, uint8_t len = 0);
         static uint16_t ftGetPage();
-        static void ftSendCmdFromString(const char*tar); //调试用
+        static void ftSendCmdFromString(const char*tar);
 
     private:
         uint8_t n;

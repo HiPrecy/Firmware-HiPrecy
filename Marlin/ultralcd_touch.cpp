@@ -15,24 +15,34 @@
   #include "power_loss_recovery.h"
 #endif
 
-#if DISABLED(PRINTCOUNTER)
-  #include "stopwatch.h"
-#else // PRINTCOUNTER
-  #include "printcounter.h"
+#include "printcounter.h"
+
+#if ENABLED(PRINTCOUNTER)
   #include "duration_t.h"
 #endif
 
-static uint8_t dynamicIcon = 0;
 
+char utf_char_buf;
+char utf_string_buf[64];
+
+#include "utf_mapper.h"
+
+#define MAX_MESSAGE_LENGTH VARADDR_STATUS_MSG_LEN
+
+char lcd_status_message[MAX_MESSAGE_LENGTH];
+uint8_t lcd_status_update_delay = 1, // First update one loop delayed
+        lcd_status_message_level;    // Higher level blocks lower level
+       
 typedef void(*generalVoidFun)();
 
 static uint8_t ftState = 0x00;
-#define FTSTATE_LCD_OLD_CARDSTATUS  0x01    //sdcard status
-#define FTSTATE_NEED_SAVE_PARAM     0x02    // need to save paras to eeprom
-#define FTSTATE_UPDATE_NOW          0x04    // update immediatelly
-#define FTSTATE_SERVO_STATUS        0x08    // servo status
-#define FTSTATE_AUTOPID_ING         0x10    // auto pid
-#define FTSTATE_ACTIVE_WARNING      0x20    //
+#define FTSTATE_LCD_OLD_CARDSTATUS        0x01    // sdcard status
+#define FTSTATE_NEED_SAVE_PARAM           0x02    // need to save paras to eeprom
+#define FTSTATE_EXECUTE_PERIOD_TASK_NOW   0x04    // excute the lcd period task immediatelly
+#define FTSTATE_SERVO_STATUS              0x08    // servo status
+#define FTSTATE_AUTOPID_ING               0x10    // auto pid
+#define FTSTATE_ACTIVE_WARNING            0x20    // 
+#define FTSTATE_STATUS_MESSAGE_NOW        0x40    // show the lcd status message immediatelly
 
 #define TEMPERTURE_PREHEAT_CHOISE_E1_PLA    0
 #define TEMPERTURE_PREHEAT_CHOISE_E1_ABS    1
@@ -65,32 +75,32 @@ uint16_t currentPageId = 0xFFFF, retPageId = 0xFFFF;
 uint16_t dwinFileWindowTopIndex = 0;
 
 int16_t lcd_preheat_hotend_temp[FILAMENTS] = { PREHEAT_1_TEMP_HOTEND, \
-                                                          PREHEAT_2_TEMP_HOTEND, \
-                                                          PREHEAT_3_TEMP_HOTEND, \
-                                                          PREHEAT_4_TEMP_HOTEND, \
-                                                          PREHEAT_5_TEMP_HOTEND, \
-                                                          PREHEAT_6_TEMP_HOTEND, \
-                                                          PREHEAT_7_TEMP_HOTEND, \
-                                                          PREHEAT_8_TEMP_HOTEND, \
-                                                          };
+                                               PREHEAT_2_TEMP_HOTEND, \
+                                               PREHEAT_3_TEMP_HOTEND, \
+                                               PREHEAT_4_TEMP_HOTEND, \
+                                               PREHEAT_5_TEMP_HOTEND, \
+                                               PREHEAT_6_TEMP_HOTEND, \
+                                               PREHEAT_7_TEMP_HOTEND, \
+                                               PREHEAT_8_TEMP_HOTEND };
 int16_t lcd_preheat_bed_temp[FILAMENTS] = {  PREHEAT_1_TEMP_BED, \
-                                                        PREHEAT_2_TEMP_BED, \
-                                                        PREHEAT_3_TEMP_BED, \
-                                                        PREHEAT_4_TEMP_BED, \ 
-                                                        PREHEAT_5_TEMP_BED, \ 
-                                                        PREHEAT_6_TEMP_BED, \ 
-                                                        PREHEAT_7_TEMP_BED, \ 
-                                                        PREHEAT_8_TEMP_BED, \ 
-                                                        };
+                                             PREHEAT_2_TEMP_BED, \
+                                             PREHEAT_3_TEMP_BED, \
+                                             PREHEAT_4_TEMP_BED, \ 
+                                             PREHEAT_5_TEMP_BED, \ 
+                                             PREHEAT_6_TEMP_BED, \ 
+                                             PREHEAT_7_TEMP_BED, \ 
+                                             PREHEAT_8_TEMP_BED };
 int16_t lcd_preheat_fan_speed[FILAMENTS] = { PREHEAT_1_FAN_SPEED, \
-                                                        PREHEAT_2_FAN_SPEED, \
-                                                        PREHEAT_3_FAN_SPEED, \
-                                                        PREHEAT_4_FAN_SPEED, \
-                                                        PREHEAT_5_FAN_SPEED, \
-                                                        PREHEAT_6_FAN_SPEED, \
-                                                        PREHEAT_7_FAN_SPEED, \
-                                                        PREHEAT_8_FAN_SPEED, \
-                                                        };
+                                             PREHEAT_2_FAN_SPEED, \
+                                             PREHEAT_3_FAN_SPEED, \
+                                             PREHEAT_4_FAN_SPEED, \
+                                             PREHEAT_5_FAN_SPEED, \
+                                             PREHEAT_6_FAN_SPEED, \
+                                             PREHEAT_7_FAN_SPEED, \
+                                             PREHEAT_8_FAN_SPEED };
+
+static uint8_t iconState = 0;
+
 float movDis, movFeedrate;
 generalVoidFun periodFun = nullptr;
 static touch_lcd myFysTLcd;
@@ -99,8 +109,7 @@ static touch_lcd myFysTLcd;
 #define MOVE_E_FEEDRATE 3.0
 #define MOVE_XYZ_FEEDRATE 50.0
 
-#if (ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)) && PIN_EXISTS(SD_DETECT)
-  //bool sd_status;
+#if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
   uint8_t lcd_sd_status;
 #endif
 
@@ -140,6 +149,7 @@ static void lcd_event();
 static void lcd_check();
 static void dwin_on_cmd(millis_t& tNow);
 static void lcd_init_datas();
+static void dwin_set_status(const char * msg);
 
 void lcd_init() {
   #if defined (SDSUPPORT) && PIN_EXISTS(SD_DETECT)
@@ -158,15 +168,9 @@ void lcd_init() {
     currentPageId = FTPAGE(MAIN);
   #endif
 
-  /*
-  #if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
-    sd_status = IS_SD_INSERTED;
-  #endif // SDSUPPORT && SD_DETECT_PIN
-  */
-
   #if ENABLED(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
     SET_INPUT_PULLUP(SD_DETECT_PIN);
-    lcd_sd_status = 2; // UNKNOWN
+    lcd_sd_status = 2; // Unknown
     dwinFileWindowTopIndex = 0;
   #endif
 
@@ -210,7 +214,7 @@ static void lcd_init_datas() {
 
 #define START_UP_END 99
 
-static void lcd_start(millis_t& tNow)  {
+static void lcd_boot_screen(millis_t& tNow)  {
   static millis_t period = 30; // 8ms
   static uint16_t pic_num = 0;
 
@@ -256,8 +260,8 @@ void lcd_update()
     }
     #endif
 
-    // deal with startup pages
-    lcd_start(t);    
+    // boot screen loop
+    lcd_boot_screen(t);    
 }
 
 static void lcd_event() {
@@ -278,7 +282,7 @@ static void lcd_event() {
       break;
     
     case LCDEVT_READY_CONTINE_PRINT:
-      #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+      #if ENABLED(SDSUPPORT)
         if (card.longFilename[0]) strncpy(sdFileName, card.longFilename, FYSTLCD_FILENAME_LEN);
         else strncpy(sdFileName, card.filename, FYSTLCD_FILENAME_LEN);
         t = strchr(sdFileName, '.');
@@ -291,7 +295,7 @@ static void lcd_event() {
       ftState &= ~FTSTATE_AUTOPID_ING;
       
     case LCDEVT_DETAIL_EXTRUDER:
-      ftState |= FTSTATE_UPDATE_NOW;
+      ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
       break;
     
@@ -320,47 +324,9 @@ static void lcd_event() {
 
 static void lcd_check() {   
 
-  #if defined(SDSUPPORT) && PIN_EXISTS(SD_DETECT)
-    /*
-    const bool sd_statusNow = IS_SD_INSERTED;
-    if (sd_statusNow != sd_status) {
-        if (!sd_statusNow) {
-          //ftState |= FTSTATE_LCD_OLD_CARDSTATUS;
-          SERIAL_ECHOPGM("SD card inserted.");
-          card.initsd();
-          if(card.cardOK) {
-              myFysTLcd.ftCmdStart(VARADDR_STATUS_SD);
-              myFysTLcd.ftCmdPut16(1);
-              myFysTLcd.ftCmdSend();
-          }
-        }
-        else {
-          bool changePage = false
-            #if FYSTLCD_PAGE_EXIST(FILELIST)
-              ||currentPageId == PAGENUM_FILELIST
-            #endif
-            #if FYSTLCD_PAGE_EXIST(ACCOMPLISH_PRINT)
-              ||currentPageId==PAGENUM_ACCOMPLISH_PRINT
-            #endif
-              ;
-          if (changePage) {
-            #if FYSTLCD_PAGE_EXIST(MAIN)
-              lcd_set_page(FTPAGE(MAIN));
-            #endif
-          }
-          card.release();
-          //ftState &= ~FTSTATE_LCD_OLD_CARDSTATUS;
-          SERIAL_ECHOPGM("SD card removed.");
-          myFysTLcd.ftCmdStart(VARADDR_STATUS_SD);
-          myFysTLcd.ftCmdJump(2);
-          myFysTLcd.ftCmdSend();
-        }
-        
-        sd_status = sd_statusNow;
-        dwinFileWindowTopIndex = 0;
-    }*/
+  #if defined(SDSUPPORT) && PIN_EXISTS(SD_DETECT)    
 
-    const uint8_t sd_status = IS_SD_INSERTED;
+    const uint8_t sd_status = IS_SD_INSERTED();
     if (sd_status != lcd_sd_status) {
 
       uint8_t old_sd_status = lcd_sd_status; // prevent re-entry to this block!
@@ -406,7 +372,6 @@ static void lcd_check() {
       }
 
       //refresh();
-      //init_lcd(); // May revive the LCD if static electricity killed it
       dwinFileWindowTopIndex = 0;
     }
   #endif
@@ -437,7 +402,9 @@ static void lcd_period_task(millis_t& tNow)  {
     ftState &= ~FTSTATE_NEED_SAVE_PARAM;
   }
   
-  if (tNow > period || (ftState&FTSTATE_UPDATE_NOW)) {
+  if ( tNow > period || \
+       (ftState&FTSTATE_EXECUTE_PERIOD_TASK_NOW)) {
+      
     if (periodFun) periodFun();
     
     millis_t distance = 0;
@@ -466,9 +433,17 @@ static void lcd_period_task(millis_t& tNow)  {
 	  #endif
 	
     lcd_period_report(distance / 1000);
+    
     period = tNow + 1000;
-    ftState &= ~FTSTATE_UPDATE_NOW;
+    ftState &= ~FTSTATE_EXECUTE_PERIOD_TASK_NOW;
   }
+
+  // status message
+  static millis_t status_period = 1300;
+  if ( tNow > status_period || \
+       (ftState&FTSTATE_STATUS_MESSAGE_NOW) ) {
+      dwin_set_status(lcd_status_message);
+  }       
 
   #if defined(VARADDR_PROMPT_DATA)&&VARADDR_PROMPT_DATA>0
     static millis_t prompt = 200;
@@ -478,6 +453,7 @@ static void lcd_period_task(millis_t& tNow)  {
     }
   #endif
 }
+
 static void lcd_save() {
   if (commands_in_queue < BUFSIZE) {
     enqueue_and_echo_commands_P(PSTR("M500"));
@@ -496,18 +472,13 @@ static inline void dwin_pid_auto_tune() {
 }
 
 static void moveAxis(AxisEnum axis, float val) {
-//  current_position[axis] += val;
-//  if (current_position[axis] < 0&&axis<E_AXIS)current_position[axis] = 0;
-//  planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], movFeedrate>0.0 ? movFeedrate : pgm_read_float(&homing_feedrate_mm_s[axis]), active_extruder);
-
-		if(planner.movesplanned()!=0) return; // geo-f:add 20180716
+		if(planner.movesplanned()!=0) return;
 
     if(axis==E_AXIS) {           
       if(thermalManager.degHotend(active_extruder) > 180) {
         // Get the new position
         current_position[axis] += val;
 
-        // geo-f : add 20180607 , FLYING_BEAR
         movFeedrate = MOVE_E_FEEDRATE;
       }
       else {
@@ -664,10 +635,14 @@ static void filament_unload() {
   }
 }
 
+static void dwin_set_status(const char* msg) 
+{
+  touch_lcd::ftPuts(VARADDR_STATUS, msg, VARADDR_STATUS_MSG_LEN);
+}
 
-// valid ：是否更新标志
+// valid ：flag to update list
 static void dwin_update_file_list(bool valid) {  
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+  #if ENABLED(SDSUPPORT)
 
     uint8_t fileWindowStartIndex=0;
     if(card.isIndir()) {
@@ -702,7 +677,7 @@ static void dwin_update_file_list(bool valid) {
 }
 
 static void dwin_file_select(const char *name,const char *longname) {    
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+  #if ENABLED(SDSUPPORT)
     if (card.sdprinting) return; 
   
     char sdFileName[FYSTLCD_FILENAME_LEN + 1] = { 0 };    
@@ -728,7 +703,7 @@ static void dwin_file_select(const char *name,const char *longname) {
 }
 
 void lcd_showFilename() {
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+  #if ENABLED(SDSUPPORT)
     char sdFileName[FYSTLCD_FILENAME_LEN + 1] = { 0 };    
                   
     if(card.longFilename[0]!=0) {
@@ -756,7 +731,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
   switch (tval) {
     case VARADDR_TOOL_TUNEPID_ENTER:
       sendActiveExtrudersParam();
-      ftState |= FTSTATE_UPDATE_NOW;
+      ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       #if FYSTLCD_PAGE_EXIST(TUNE_PID)
         lcd_set_page(FTPAGE(TUNE_PID));
       #endif
@@ -1303,7 +1278,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
 
 #endif // POWER_LOSS_RECOVERY
 
-#if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+#if ENABLED(SDSUPPORT)
 
   void lcd_sdcard_pause() {
     card.pauseSDPrint();
@@ -1334,12 +1309,12 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     //lcd_return_to_status();
   }
 
-#endif // SDSUPPORT || FYS_STORAGE_SUPPORT
+#endif // SDSUPPORT 
 
 
 static void dwin_on_cmd_print(uint16_t tval)
 {
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+  #if ENABLED(SDSUPPORT)
     if (card.cardOK) {      
       switch (tval) {
         case VARVAL_PRINT_FILELIST:
@@ -1431,7 +1406,7 @@ static void dwin_on_cmd_print(uint16_t tval)
               lcd_set_page(FTPAGE(MAIN));
             #endif
             lcd_sdcard_stop();              
-            dynamicIcon = 0;
+            iconState = 0;
           }
           break;
             
@@ -1482,7 +1457,7 @@ static void dwin_on_cmd_print(uint16_t tval)
           case VARVAL_PRINT_CONFIRM:
             card.startFileprint();
             print_job_timer.start();
-            dynamicIcon = 0;
+            iconState = 0;
             #if FYSTLCD_PAGE_EXIST(PRINT)
             lcd_set_page(FTPAGE(PRINT));
             #endif
@@ -2065,64 +2040,64 @@ static void lcd_period_prompt_report() {
   ********************/
   myFysTLcd.ftCmdStart(VARADDR_PROMPT_DATA);
   #if HAS_X_MIN //10A0
-  if(READ(X_MIN_PIN) ^ X_MIN_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
-  else myFysTLcd.ftCmdJump(2);
+    if(READ(X_MIN_PIN) ^ X_MIN_ENDSTOP_INVERTING) myFysTLcd.ftCmdPut16(1);
+    else myFysTLcd.ftCmdJump(2);
   #else
-  myFysTLcd.ftCmdJump(2);
+    myFysTLcd.ftCmdJump(2);
   #endif
 
   #if HAS_X_MAX //10A1
-  if (READ(X_MAX_PIN) ^ X_MAX_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
-  else myFysTLcd.ftCmdJump(2);
+    if (READ(X_MAX_PIN) ^ X_MAX_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
+    else myFysTLcd.ftCmdJump(2);
   #else
-  myFysTLcd.ftCmdJump(2);
+    myFysTLcd.ftCmdJump(2);
   #endif
 
   #if HAS_Y_MIN //10A2
-  if(READ(Y_MIN_PIN) ^ Y_MIN_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
-  else myFysTLcd.ftCmdJump(2);
+    if(READ(Y_MIN_PIN) ^ Y_MIN_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
+    else myFysTLcd.ftCmdJump(2);
   #else
-  myFysTLcd.ftCmdJump(2);
+    myFysTLcd.ftCmdJump(2);
   #endif
 
   #if HAS_Y_MAX //10A3
-  if(READ(Y_MAX_PIN) ^ Y_MAX_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
-  else myFysTLcd.ftCmdJump(2);
+    if(READ(Y_MAX_PIN) ^ Y_MAX_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
+    else myFysTLcd.ftCmdJump(2);
   #else
-  myFysTLcd.ftCmdJump(2);
+    myFysTLcd.ftCmdJump(2);
   #endif
 
   #if HAS_Z_MIN //10A4
-  if(READ(Z_MIN_PIN) ^ Z_MIN_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
-  else myFysTLcd.ftCmdJump(2);
+    if(READ(Z_MIN_PIN) ^ Z_MIN_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
+    else myFysTLcd.ftCmdJump(2);
   #else
-  myFysTLcd.ftCmdJump(2);
+    myFysTLcd.ftCmdJump(2);
   #endif
 
   #if HAS_Z_MAX //10A5
-  if(READ(Z_MAX_PIN) ^ Z_MAX_ENDSTOP_INVERTING)myFysTLcd.ftCmdPut16(1);
-  else myFysTLcd.ftCmdJump(2);
+    if(READ(Z_MAX_PIN) ^ Z_MAX_ENDSTOP_INVERTING) myFysTLcd.ftCmdPut16(1);
+    else myFysTLcd.ftCmdJump(2);
   #else
-  myFysTLcd.ftCmdJump(2);
+    myFysTLcd.ftCmdJump(2);
   #endif
 
   myFysTLcd.ftCmdJump(2);//10A6 reserved
   
-  dynamicIcon++;
-  if (dynamicIcon > 9)dynamicIcon = 0;
+  iconState++;
+  if (iconState > 9) iconState = 0;
   
   #if FAN_COUNT > 0
     if (fanSpeeds[active_extruder] > 0)
-        myFysTLcd.ftCmdPut16(dynamicIcon);
+        myFysTLcd.ftCmdPut16(iconState);
     else
         myFysTLcd.ftCmdJump(2);
   #else
     myFysTLcd.ftCmdJump(2);
   #endif
 
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
-    if (card.sdprinting)//10A8 print ico
-      myFysTLcd.ftCmdPut16(dynamicIcon);
+  #if ENABLED(SDSUPPORT)
+    if (card.sdprinting)// print ico
+      myFysTLcd.ftCmdPut16(iconState);
     else
   #endif
   
@@ -2130,7 +2105,7 @@ static void lcd_period_prompt_report() {
   
   myFysTLcd.ftCmdJump(2);//10A9 reserved
   if (ftState&FTSTATE_AUTOPID_ING) {
-    myFysTLcd.ftCmdPut16(dynamicIcon);//10AA auto PID ico
+    myFysTLcd.ftCmdPut16(iconState);//10AA auto PID ico
   }
   else {
     myFysTLcd.ftCmdJump(2);
@@ -2144,7 +2119,6 @@ static void lcd_period_report(int16_t s) {
 
   myFysTLcd.ftCmdStart(VARADDR_PERIOD_DATA);
   
-  //myFysTLcd.ftCmdPutF16(thermalManager.degHotend(0));
   myFysTLcd.ftCmdPut16((int16_t)thermalManager.degHotend(0));
   
   #if HAS_FAN0
@@ -2154,7 +2128,6 @@ static void lcd_period_report(int16_t s) {
   #endif
   
   #if HAS_TEMP_BED
-   //myFysTLcd.ftCmdPutF16(thermalManager.degBed());
    myFysTLcd.ftCmdPut16((int16_t)thermalManager.degBed());
   #else
    myFysTLcd.ftCmdJump(2);
@@ -2166,9 +2139,9 @@ static void lcd_period_report(int16_t s) {
     myFysTLcd.ftCmdPutF16(current_position[i]);
   }
 
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+  #if ENABLED(SDSUPPORT)
     static int progress = 0;
-    if (IS_SD_PRINTING)progress = card.percentDone();
+    if (IS_SD_PRINTING())progress = card.percentDone();
     if (progress> 100)progress = 0;
     myFysTLcd.ftCmdPut16(progress);
   #else
@@ -2182,7 +2155,7 @@ static void lcd_period_report(int16_t s) {
   #endif
   myFysTLcd.ftCmdSend();
   
-  // geo-f : zprope offset
+  // Zprope zoffset
   #if HAS_BED_PROBE
     myFysTLcd.ftCmdStart(VARADDR_ZOFFSET_DATA);
     myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
@@ -2192,7 +2165,6 @@ static void lcd_period_report(int16_t s) {
   #if EXTRUDERS>1
     myFysTLcd.ftCmdStart(VARADDR_EXTRUDERS_TEMP);
     for (uint8_t e = 1; e < EXTRUDERS; e++) {
-//      myFysTLcd.ftCmdPutF16(thermalManager.degHotend(e));
       myFysTLcd.ftCmdPut16((int16_t)thermalManager.degHotend(e));
     }
     myFysTLcd.ftCmdSend();
@@ -2204,9 +2176,9 @@ static void lcd_period_report(int16_t s) {
     myFysTLcd.ftCmdSend();      
   #endif
 
-  #if ENABLED(SDSUPPORT) || ENABLED(FYS_STORAGE_SUPPORT)
+  #if ENABLED(SDSUPPORT)
   
-    if (IS_SD_PRINTING) {
+    if (IS_SD_PRINTING()) {
       myFysTLcd.ftCmdStart(VARADDR_PRINT_TIME);
       millis_t pt = print_job_timer.duration();
       card.percentDone();
@@ -3194,58 +3166,6 @@ static void readParam_system()
     }
 }
 
-/*
-void kill_screen(const char* msg) 
-{
-  char str[INFO_POPUP_LEN + 1], i, j, ch;
-  if (msg)
-  for (j = 0; j < INFOS_NUM; j++) {
-    memset(str, 0, INFO_POPUP_LEN);
-    i = 0;
-    while (ch = *msg) {
-      if (ch == '\n') {
-          msg++;
-          break;
-      }
-      str[i++] = ch;
-      msg++;
-      if (i >= INFO_POPUP_LEN)break;
-    }
-    touch_lcd::ftPuts(VARADDR_POP_INFOS[j], str, INFO_POPUP_LEN);
-  }
-     
-  #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
-    lcd_pop_page(FTPAGE(INFO_WAITING));
-  #endif           
-}
-*/
-
-void kill_screen(const char* message) 
-{
-  char str[INFO_POPUP_LEN + 1], i, j, ch;
-  char *pMsg = (char *)message;
-  if (pMsg)
-  for (j = 0; j < INFOS_NUM; j++) {
-    memset(str, 0, INFO_POPUP_LEN);
-    i = 0;
-    while (ch = pgm_read_byte(pMsg)) {
-      if (ch == '\n') {
-          pMsg++;
-          break;
-      }
-      str[i++] = ch;
-      pMsg++;
-      if (i >= INFO_POPUP_LEN) break;
-    }
-    SERIAL_ECHOLN(str);
-    touch_lcd::ftPuts(VARADDR_POP_INFOS[j], str, INFO_POPUP_LEN);
-  }
-  
-  #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
-    lcd_pop_page(FTPAGE(INFO_WAITING));
-  #endif           
-}
-
 void dwin_popup(const char* msg, EM_POPUP_PAGE_TYPE pageChoose, char funid)
 {
     char str[INFO_POPUP_LEN + 1], i, j, ch;
@@ -3314,6 +3234,158 @@ void dwin_popup_shutdown() {
   }
 }
 
+// Update the status page data 
+void lcd_finishstatus(const bool persist=false) {
+  UNUSED(persist);
+}
+
+bool lcd_hasstatus() { return (lcd_status_message[0] != '\0'); }
+
+void lcd_setstatus(const char * const message, const bool persist) {
+  if (lcd_status_message_level > 0) return;
+
+  // Here we have a problem. The message is encoded in UTF8, so
+  // arbitrarily cutting it will be a problem. We MUST be sure
+  // that there is no cutting in the middle of a multibyte character!
+
+  // Get a pointer to the null terminator
+  const char* pend = message + strlen(message);
+
+  //  If length of supplied UTF8 string is greater than
+  // our buffer size, start cutting whole UTF8 chars
+  while ((pend - message) > MAX_MESSAGE_LENGTH) {
+    --pend;
+    while (!START_OF_UTF8_CHAR(*pend)) --pend;
+  };
+
+  // At this point, we have the proper cut point. Use it
+  uint8_t maxLen = pend - message;
+  strncpy(lcd_status_message, message, maxLen);
+  lcd_status_message[maxLen] = '\0';
+
+  lcd_finishstatus(persist);
+}
+
+void lcd_setstatusPGM(const char * const message, int8_t level) {
+  if (level < 0) level = lcd_status_message_level = 0;
+  if (level < lcd_status_message_level) return;
+  lcd_status_message_level = level;
+
+  // Here we have a problem. The message is encoded in UTF8, so
+  // arbitrarily cutting it will be a problem. We MUST be sure
+  // that there is no cutting in the middle of a multibyte character!
+
+  // Get a pointer to the null terminator
+  const char* pend = message + strlen_P(message);
+
+  //  If length of supplied UTF8 string is greater than
+  // our buffer size, start cutting whole UTF8 chars
+  while ((pend - message) > MAX_MESSAGE_LENGTH) {
+    --pend;
+    while (!START_OF_UTF8_CHAR(pgm_read_byte(pend))) --pend;
+  };
+
+  // At this point, we have the proper cut point. Use it
+  uint8_t maxLen = pend - message;
+  strncpy_P(lcd_status_message, message, maxLen);
+  lcd_status_message[maxLen] = '\0';
+
+  lcd_finishstatus(level > 0);
+}
+
+void lcd_status_printf_P(const uint8_t level, const char * const fmt, ...) {
+  if (level < lcd_status_message_level) return;
+  lcd_status_message_level = level;
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf_P(lcd_status_message, MAX_MESSAGE_LENGTH, fmt, args);
+  va_end(args);
+  lcd_finishstatus(level > 0);
+}
+
+// 
+void lcd_setalertstatusPGM(const char * const message) {
+  lcd_setstatusPGM(message, 1);
+  //lcd_return_to_status();
+  /*
+  #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+    //lcd_pop_page(FTPAGE(INFO_WAITING));
+    lcd_set_page(FTPAGE(INFO_WAITING));
+    SERIAL_ECHOLN("lcd_pop_page"); //test
+  #endif
+  */
+}
+
+void lcd_reset_alert_level() { lcd_status_message_level = 0; }
+
+// we just save the translated char to utf_char_buf
+// n : the length of the text box
+void lcd_printPGM_utf(const char *str, uint8_t n) {
+  char c;
+  uint8_t i=0;
+  while (n && (c = pgm_read_byte(str))) {
+    n -= charset_mapper(c);
+    ++str;
+    utf_string_buf[i++] = utf_char_buf;
+  }
+  utf_string_buf[i] = '\0';
+}
+
+// just fill in datas
+void lcd_kill_screen() {
+  SERIAL_ECHOLN("lcd_kill_screen"); //test
+
+  SERIAL_ECHOLNPAIR("lcd_status_message ",lcd_status_message); //test
+  touch_lcd::ftPuts(VARADDR_POP_INFOS[0], lcd_status_message, INFO_POPUP_LEN);
+
+  lcd_printPGM_utf(PSTR(MSG_HALTED),INFO_POPUP_LEN);
+  SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf); //test
+  touch_lcd::ftPuts(VARADDR_POP_INFOS[1], utf_string_buf, INFO_POPUP_LEN);
+
+  lcd_printPGM_utf(PSTR(MSG_PLEASE_RESET),INFO_POPUP_LEN);
+  SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf); //test
+  touch_lcd::ftPuts(VARADDR_POP_INFOS[2], utf_string_buf, INFO_POPUP_LEN);
+
+    #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+    //lcd_pop_page(FTPAGE(INFO_WAITING));
+    lcd_set_page(FTPAGE(INFO_WAITING));
+    SERIAL_ECHOLN("lcd_pop_page"); //test
+  #endif
+}
+
+/**
+ * Reset the status message
+ */
+void lcd_reset_status() {
+  static const char paused[] PROGMEM = MSG_PRINT_PAUSED;
+  static const char printing[] PROGMEM = MSG_PRINTING;
+  static const char welcome[] PROGMEM = WELCOME_MSG;
+  const char *msg;
+  if (print_job_timer.isPaused())
+    msg = paused;
+  #if ENABLED(SDSUPPORT)
+    else if (card.sdprinting)
+      return lcd_setstatus(card.longest_filename(), true);
+  #endif
+  else if (print_job_timer.isRunning())
+    msg = printing;
+  else
+    msg = welcome;
+
+  lcd_setstatusPGM(msg, -1);
+}
+
+/**
+ * set status message
+ * draw the kill screen
+ *
+ */
+void kill_screen(const char* lcd_msg) {
+  SERIAL_ECHOLN("kill_screen"); //test
+  lcd_setalertstatusPGM(lcd_msg); 
+  lcd_kill_screen();       
+}
+
 void lcd_startup_music() {
   touch_lcd::ftPlayMusic(0x00, 0x0a, 0xFF);
   delay(100);
@@ -3322,59 +3394,6 @@ void lcd_startup_music() {
 void lcd_shutDown() {
   touch_lcd::ftPlayMusic(0x05, 0x02, 0xFF);
   lcd_set_page(0x00);
-}
-
-void lcd_setstatus(const char* message, const bool persist)
-{
-  (void)persist;
-  #ifdef FYS_WIFI_ESP3D
-    while (*message == ' ')message++;
-    bool tf = false;
-    const char*t;
-    char n, d;
-    for (n = 0, d = 0, t = message; (*t >= '0'&&*t <= '9') || *t == '.'; t++) {
-      if (*t == '.') {
-        if (tf) {
-            d++;
-            tf = false;
-        }
-        else break;
-      }
-      else {
-        if (!tf) {
-          tf = true;
-          n++;
-        }
-      }
-    }
-    if (n == 4 && d == 3) {
-      touch_lcd::ftPuts(VARADDR_WIFI_IP, message, ATTACH_STR_LEN);
-      return;
-    }
-    
-    const char* str = "SSID";
-    for (t = message; *t; t++) {
-      if (*t == str[0]) {
-        const char *r=t;
-        for(d=0;*r&&d<4;r++,d++)
-        if (*r != str[d])break;
-        if (d == 4) {
-          t = r;
-          t++;
-          break;
-        }
-      }
-    }
-    if (*t) {
-      touch_lcd::ftPuts(VARADDR_WIFI_SSID, t, ATTACH_STR_LEN);
-      myFysTLcd.ftCmdStart(VARADDR_STATUS_WIFI);
-      myFysTLcd.ftCmdPut16(1);
-      myFysTLcd.ftCmdSend();
-      return;
-    }
-	#else
-    (void)message;
-	#endif
 }
 
 void lcd_set_return_page_print() { 

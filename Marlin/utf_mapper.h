@@ -25,7 +25,10 @@
 
 #include "language.h"
 
-#if ENABLED(DOGLCD)
+// TO-DO: multi language
+#if ENABLED(TOUCH_LCD)
+  #define HARDWARE_CHAR_OUT(C) utf_char_buf = ((char)(C))
+#elif ENABLED(DOGLCD)
   #define HARDWARE_CHAR_OUT(C) u8g.print((char)(C))
 #else
   #define HARDWARE_CHAR_OUT(C) lcd.write((char)(C))

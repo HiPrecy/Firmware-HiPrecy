@@ -1,20 +1,18 @@
 #include "touch_lcd.h"
 
-
-//*************** 1010---1060: file list ****************/
+// File list
 static const uint16_t VARADDR_FILES_NAME[] = { 0x1010, 0x1020, 0x1030, 0x1040, 0x1050 };
 static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARADDR_FILES_NAME[0]);
 
-/************* 0x1070---0x109F status data ***************/
+
+// Status data
 #define     VARADDR_STATUS_SD                       0x1070  
 #define     VARADDR_STATUS_AXIS_LOCK                0x1071  
 #define     VARADDR_STATUS_FAN                      0x1072  
 #define     VARADDR_STATUS_SERVO                    0x1073  
 #define     VARADDR_STATUS_WIFI                     0x1074  
 
-
-/****************0x10A0---0x11FF period data****************/
-#define     INFOS_NUM                               4
+// Period data
 #define     VARADDR_PROMPT_DATA                     0x10A0  
 #define     VARADDR_PRINTFILE_NAME                  0x10D0  
 #define     VARADDR_PERIOD_DATA                     0x1100  
@@ -29,12 +27,15 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 #define     VARADDR_ACTIVE_EXTRUDERS_HOTEND         0x1131
 #define     VARADDR_PRINT_TIME                      0x1150  
 #define     VARADDR_START_UP                        0x1160 
+#define     VARADDR_STATUS                          0x1170
+#define     VARADDR_STATUS_MSG_LEN                  16
 
+// Pop up info menu
+#define     INFOS_NUM                               4
 static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0x11B0 };
-#define     INFO_POPUP_LEN                          0x20
+#define     INFO_POPUP_LEN                          16
 
-
-/****************0x1200---0x16FF parameters****************/
+// Parameters
 #define     VARADDR_PARAM_TUNE                      0x1200  // 1200~1205:temp 1206~120A:fan
 #define     VARADDR_PARAM_MOTOR                     0x1280  
 #define     VARADDR_PARAM_LEVELING                  0x1380  
@@ -47,7 +48,7 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARADDR_PARAM_SYSTEM                    0x15A0  
 
 
-/****************0x1700---0x1720 auto return****************/
+// Tool
 #define     VARADDR_TOOL                            0x1700  
 
 #define     VARADDR_TOOL_TUNEPID_ENTER              0x0001  
@@ -141,15 +142,15 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_APPLY        0x0060
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL       0x0061
 
-
-// -----------------------About print
+// Print
 #define     VARADDR_PRINT                           0x1701  
 
 #define     VARVAL_PRINT_FILELIST                   0x0001  
 #define     VARVAL_PRINT_FILELIST_UPPAGE            0x0002 
 #define     VARVAL_PRINT_FILELIST_DOWNPAGE          0x0003 
 
-static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D };//选中文件列表上某一个文件
+static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 
+                                                    0x0009, 0x000A, 0x000B, 0x000C, 0x000D };
 #define     VARVAL_PRINT_RESUME_PRINT               0x0021  
 #define     VARVAL_PRINT_PAUSE                      0x0022  
 #define     VARVAL_PRINT_STOP                       0x0023  
@@ -164,7 +165,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARVAL_PRINT_TUNE_FAN_ENTER             0x002C
 #define     VARVAL_PRINT_TUNE_FAN_APPLY             0x002D
 
-// ---------------------- About setting
+// Setting
 #define     VARADDR_SETTING                         0x1702  
 
 #define     VARVAL_SETTING_MOTOR_ENTER              0x0001  
@@ -189,36 +190,36 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARVAL_SETTINGS_SYSTEM_APPLY            0x00C4  
 #define     VARVAL_SETTINGS_SYSTEM_SAVE             0x00C5  
 
-// ---------------------- About extruders
+// Extruders
 #define     VARADDR_EXTRUDERS                       0x1703  
 
-#define     VARVAL_EXTRUDERS_OFFSET_ENTER           0x0001  
-#define     VARVAL_EXTRUDERS_OFFSET_APPLY           0x0002  
-#define     VARVAL_EXTRUDERS_OFFSET_SAVE            0x0003  
-#define     VARVAL_EXTRUDERS_MOTOR_ENTER            0x0004  
-#define     VARVAL_EXTRUDERS_MOTOR_APPLY            0x0005  
-#define     VARVAL_EXTRUDERS_MOTOR_SAVE             0x0006  
-#define     VARVAL_EXTRUDERS_TEMP_ENTER             0x0007  
-#define     VARVAL_EXTRUDERS_TEMP_APPLY             0x0008  
-#define     VARVAL_EXTRUDERS_TEMP_SAVE              0x0009  
+#define     VARVAL_EXTRUDERS_OFFSET_ENTER           0x0001
+#define     VARVAL_EXTRUDERS_OFFSET_APPLY           0x0002
+#define     VARVAL_EXTRUDERS_OFFSET_SAVE            0x0003
+#define     VARVAL_EXTRUDERS_MOTOR_ENTER            0x0004
+#define     VARVAL_EXTRUDERS_MOTOR_APPLY            0x0005
+#define     VARVAL_EXTRUDERS_MOTOR_SAVE             0x0006
+#define     VARVAL_EXTRUDERS_TEMP_ENTER             0x0007
+#define     VARVAL_EXTRUDERS_TEMP_APPLY             0x0008
+#define     VARVAL_EXTRUDERS_TEMP_SAVE              0x0009
 
-// ---------------------- Others
-#define     VARADDR_MOVE_DIS                        0x1704  
-#define     VARADDR_MOVE_SPEED                      0x1705  
+// Others
+#define     VARADDR_MOVE_DIS                        0x1704
+#define     VARADDR_MOVE_SPEED                      0x1705
 
-#define     VARADDR_FILAMENT_AUTO_ADD               0x1706  
-#define     VARADDR_FILAMENT_AUTO_REMOVE            0x1707  
-#define     VARVAL_FILAMENT_OPE_EXTRU1              0x0001  //
-#define     VARVAL_FILAMENT_OPE_EXTRU2              0x0002  //
-#define     VARVAL_FILAMENT_OPE_EXTRU1_PLA          0x0003  //
-#define     VARVAL_FILAMENT_OPE_EXTRU1_ABS          0x0004  //
-#define     VARVAL_FILAMENT_OPE_EXTRU1_PET          0x0005  //
-#define     VARVAL_FILAMENT_OPE_EXTRU1_FLEX         0x0006  //
+#define     VARADDR_FILAMENT_AUTO_ADD               0x1706
+#define     VARADDR_FILAMENT_AUTO_REMOVE            0x1707
+#define     VARVAL_FILAMENT_OPE_EXTRU1              0x0001
+#define     VARVAL_FILAMENT_OPE_EXTRU2              0x0002
+#define     VARVAL_FILAMENT_OPE_EXTRU1_PLA          0x0003
+#define     VARVAL_FILAMENT_OPE_EXTRU1_ABS          0x0004
+#define     VARVAL_FILAMENT_OPE_EXTRU1_PET          0x0005
+#define     VARVAL_FILAMENT_OPE_EXTRU1_FLEX         0x0006
 
-#define     VARVAL_FILAMENT_OPE_EXTRU2_PLA          0x0007  //
-#define     VARVAL_FILAMENT_OPE_EXTRU2_ABS          0x0008  //
-#define     VARVAL_FILAMENT_OPE_EXTRU2_PET          0x0009  //
-#define     VARVAL_FILAMENT_OPE_EXTRU2_FLEX         0x000A  //
+#define     VARVAL_FILAMENT_OPE_EXTRU2_PLA          0x0007
+#define     VARVAL_FILAMENT_OPE_EXTRU2_ABS          0x0008
+#define     VARVAL_FILAMENT_OPE_EXTRU2_PET          0x0009
+#define     VARVAL_FILAMENT_OPE_EXTRU2_FLEX         0x000A
 
 
 #define     VARADDR_JUMP_PAGE                       0x1710  
@@ -234,10 +235,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARVAL_TUNE_FORWARD_E                   0X0001
 #define     VARVAL_TUNE_BACKWARD_E                  0X0002
 
-
-
-/****************0x1721---0x17E0 additional****************/
-
+// Additional
 #define     VARADDR_MOVE_DIS_SIGN                   0x1721  
 #define     VARADDR_MOVE_SPEED_SIGN                 0x1722
 #define     VARADDR_QUESTION_LEFT                   0x1730  
@@ -255,6 +253,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     ATTACH_STR_LEN                          0x14    
 #define     SERIAL_NUMBER                           "010-2323-4545"
 
+// Page number
 #define     PAGENUM_MAIN                            1
 #define     PAGENUM_TEMP_PREHEAT                    10
 #define     PAGENUM_TEMP_PREHEAT_E1                 12
@@ -297,8 +296,6 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     PAGENUM_SETTING_TMC2130                 0
 #define     PAGENUM_SETTING_MATERIAL                0
 #define     PAGENUM_SETTING_SYSTEM                  0
-
-
 
 #define     FYSTLCD_PAGE_EXIST(x)   (defined(PAGENUM_##x)&&PAGENUM_##x>0)
 #define     FTPAGE(x)   PAGENUM_##x

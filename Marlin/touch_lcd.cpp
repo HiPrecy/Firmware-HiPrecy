@@ -56,123 +56,78 @@
   void touch_lcd::ftRxIrq(u8 dat)
   {
     static bool ifGetData = false;
-    static int8_t num = 0, n = 0, step = 0;
+    static int8_t num = 0, n = 0, step = 0;    
 
-    #ifdef FYSTLCD_FYS_CUSTOMIZED
-    
-      if(dat==FYSTLCD_FRAM_HEAD1&&step == 0)step = 1;
-      else if(step==1) {
-        if(dat==FYSTLCD_READ_VAR)step=2;
-        //else if(dat==FYSTLCD_WRITE_VAR)step=3;// we don't care if send success
-        else step=0;
-        num=0;
+    if (dat == FYSTLCD_FRAM_HEAD1 && step == 0)step = 1;
+    else if (dat == FYSTLCD_FRAM_HEAD2&&step == 1)step = 2;
+    else if (step == 2)step++;
+    else if (step == 3) {
+      switch (dat){
+        case FYSTLCD_READ_REG:step = 5; break;
+        case FYSTLCD_READ_VAR:step = 6;  break;
+        default:step = 0;  break;
       }
-      else if(step==2) {
-        ++num;
-        switch(num) {
-          case 1:
-            ftAddr = dat;
-            break;
-          case 2:
-            ftAddr = (ftAddr << 8) | dat;
-            break;
-          case 3:
-            n=dat<<1;
-            break;
-          default:
-            if (n > 0) {
-              ftData[num - 4] = dat;
+      num = 0;
+    }
+    else if (step == 5) {// register data    
+      num++;
+      switch (num) {
+        case 0x01:// address
+          ftAddr = dat;
+          break;
+        case 0x02:// data length
+          n = dat;
+          break;
+        default:
+          if (n > 0)
+          {
+              ftData[num - 3] = dat;
               n--;
               ifGetData = true;
-            }
-            break;
-        }
-        if (ifGetData&&n == 0) {
-          ftRecvData = true;
-          ifGetData = false;
-          step = 0;
-          ftDataLen = num - 3;
-          num = 0;
-        }
+          }
+          break;
       }
-      else {
-        num = 0;
+      if (ifGetData&&n == 0) {
+        ftRecvData = true;
+        ifGetData = false;
         step = 0;
-        n = 0;
-      }          
-
-    #else // FYSTLCD_FYS_CUSTOMIZED
-
-      if (dat == FYSTLCD_FRAM_HEAD1&&step == 0)step = 1;
-      else if (dat == FYSTLCD_FRAM_HEAD2&&step == 1)step = 2;
-      else if (step == 2)step++;
-      else if (step == 3) {
-        switch (dat){
-          case FYSTLCD_READ_REG:step = 5; break;
-          case FYSTLCD_READ_VAR:step = 6;  break;
-          default:step = 0;  break;
-        }
+        ftDataLen = num - 2;
         num = 0;
       }
-      else if (step == 5) {// register data    
-        num++;
-        switch (num) {
-          case 0x01:// address
-            ftAddr = dat;
-            break;
-          case 0x02:// data length
-            n = dat;
-            break;
-          default:
-            if (n > 0)
-            {
-                ftData[num - 3] = dat;
-                n--;
-                ifGetData = true;
-            }
-            break;
-        }
-        if (ifGetData&&n == 0) {
-          ftRecvData = true;
-          ifGetData = false;
-          step = 0;
-          ftDataLen = num - 2;
-          num = 0;
-        }
+    }
+    else if (step == 6) {
+      ++num;
+      switch (num) {
+        case 1:
+          ftAddr = dat;
+          break;
+        case 2:
+          ftAddr = (ftAddr << 8) | dat;
+          break;
+        case 3:
+          n = dat << 1;
+          break;
+        default:
+          if (n > 0) {
+            ftData[num - 4] = dat;
+            n--;
+            ifGetData = true;
+          }
+          break;
       }
-      else if (step == 6) {
-        ++num;
-        switch (num) {
-          case 1:
-            ftAddr = dat;
-            break;
-          case 2:
-            ftAddr = (ftAddr << 8) | dat;
-            break;
-          case 3:
-            n = dat << 1;
-            break;
-          default:
-            if (n > 0) {
-              ftData[num - 4] = dat;
-              n--;
-              ifGetData = true;
-            }
-            break;
-        }
-        if (ifGetData&&n == 0) {
-          ftRecvData = true;
-          ifGetData = false;
-          step = 0;// one frame data received
-          ftDataLen = num - 3;
-          num = 0;
-        }
-      }
-      else {
+      if (ifGetData&&n == 0) {
+        ftRecvData = true;
+        ifGetData = false;
+        step = 0;// one frame data received
+        ftDataLen = num - 3;
         num = 0;
-        step = 0;
       }
-    #endif
+    }
+    else {
+      num = 0;
+      step = 0;
+    }
+
   }
 
   ISR(USART2_RX_vect) {
@@ -183,41 +138,33 @@
   void touch_lcd::ftWriteVar(const uint16_t& varAddr, const uint8_t *varData, uint8_t len) {
     if (len == 0)return;
 
-    #if defined(FYSTLCD_FYS_CUSTOMIZED)
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-      ftWrite(len>>1);
-    #else
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_FRAM_HEAD2);
-      ftWrite(len + 3);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
+    ftWrite(FYSTLCD_FRAM_HEAD1);
+    ftWrite(FYSTLCD_FRAM_HEAD2);
+    ftWrite(len + 3);
+    ftWrite(FYSTLCD_WRITE_VAR);
+    ftWrite((uint8_t)(varAddr >> 8));
+    ftWrite((uint8_t)varAddr);
 
-      if(test){
-        SERIAL_PRINT(FYSTLCD_FRAM_HEAD1,16);
-        SERIAL_ECHO(' ');
-        delay(2);
-        SERIAL_PRINT(FYSTLCD_FRAM_HEAD2,16);
-        SERIAL_ECHO(' ');
-        delay(2);
-        SERIAL_PRINT(len + 3,16);
-        SERIAL_ECHO(' ');
-        delay(2);
-        SERIAL_PRINT(FYSTLCD_WRITE_VAR,16);
-        SERIAL_ECHO(' ');
-        delay(2);
-        SERIAL_PRINT((uint8_t)(varAddr >> 8),16);
-        SERIAL_ECHO(' ');
-        delay(2);
-        SERIAL_PRINT((uint8_t)varAddr,16);
-        SERIAL_ECHO(' ');
-        delay(2);
-      }
-    #endif
+    if(test){
+      SERIAL_PRINT(FYSTLCD_FRAM_HEAD1,16);
+      SERIAL_ECHO(' ');
+      delay(2);
+      SERIAL_PRINT(FYSTLCD_FRAM_HEAD2,16);
+      SERIAL_ECHO(' ');
+      delay(2);
+      SERIAL_PRINT(len + 3,16);
+      SERIAL_ECHO(' ');
+      delay(2);
+      SERIAL_PRINT(FYSTLCD_WRITE_VAR,16);
+      SERIAL_ECHO(' ');
+      delay(2);
+      SERIAL_PRINT((uint8_t)(varAddr >> 8),16);
+      SERIAL_ECHO(' ');
+      delay(2);
+      SERIAL_PRINT((uint8_t)varAddr,16);
+      SERIAL_ECHO(' ');
+      delay(2);
+    }
     
     while (len-- > 0) {
       if(test){
@@ -229,59 +176,42 @@
     }
   }
 
-  void touch_lcd::ftWriteVar(const uint16_t& varAddr, const uint16_t& data) {
-    #if defined(FYSTLCD_FYS_CUSTOMIZED)
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-      ftWrite(0x01);
-    #else
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_FRAM_HEAD2);
-      ftWrite(0x05);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-    #endif
+  void touch_lcd::ftWriteVar(const uint16_t& varAddr, const uint16_t& data) {    
+    ftWrite(FYSTLCD_FRAM_HEAD1);
+    ftWrite(FYSTLCD_FRAM_HEAD2);
+    ftWrite(0x05);
+    ftWrite(FYSTLCD_WRITE_VAR);
+    ftWrite((uint8_t)(varAddr >> 8));
+    ftWrite((uint8_t)varAddr);
+
     ftWrite((uint8_t)(data >> 8));
     ftWrite((uint8_t)data);
   }
 
   bool touch_lcd::ftReadVar(const uint16_t& varAddr, uint8_t*tdata, uint8_t len){
     ftRecvData = false;
-    #if defined(FYSTLCD_FYS_CUSTOMIZED)
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_READ_VAR);
-      ftWrite(uint8_t(varAddr >> 8));
-      ftWrite(uint8_t(varAddr));
-    #else
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_FRAM_HEAD2);
-      ftWrite(0x04);
-      ftWrite(FYSTLCD_READ_VAR);
-      ftWrite(uint8_t(varAddr >> 8));
-      ftWrite(uint8_t(varAddr));
-    #endif
+    
+    ftWrite(FYSTLCD_FRAM_HEAD1);
+    ftWrite(FYSTLCD_FRAM_HEAD2);
+    ftWrite(0x04);
+    ftWrite(FYSTLCD_READ_VAR);
+    ftWrite(uint8_t(varAddr >> 8));
+    ftWrite(uint8_t(varAddr));
+
     ftWrite(len >> 1);
     return waitData(tdata);
   }
 
   void touch_lcd::ftReadVar(const uint16_t& varAddr, uint8_t len) {
     ftRecvData = false;
-    #if defined(FYSTLCD_FYS_CUSTOMIZED)
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_READ_VAR);
-      ftWrite(uint8_t(varAddr >> 8));
-      ftWrite(uint8_t(varAddr));
-    #else
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_FRAM_HEAD2);
-      ftWrite(0x04);
-      ftWrite(FYSTLCD_READ_VAR);
-      ftWrite(uint8_t(varAddr >> 8));
-      ftWrite(uint8_t(varAddr));
-    #endif
+    
+    ftWrite(FYSTLCD_FRAM_HEAD1);
+    ftWrite(FYSTLCD_FRAM_HEAD2);
+    ftWrite(0x04);
+    ftWrite(FYSTLCD_READ_VAR);
+    ftWrite(uint8_t(varAddr >> 8));
+    ftWrite(uint8_t(varAddr));
+
     ftWrite(len >> 1);
   }
 
@@ -325,41 +255,27 @@
     if (len == 0)
     while (str[len])len++;
     
-    #if defined(FYSTLCD_FYS_CUSTOMIZED)
-      len++;
-      len >>= 1;
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-      ftWrite(len);
-      len <<= 1;
-      while (len--) {
-        if(*str)ftWrite(*str++);
-        else ftWrite(0);
+    ftWrite(FYSTLCD_FRAM_HEAD1);
+    ftWrite(FYSTLCD_FRAM_HEAD2);
+    ftWrite(len + 3);
+    ftWrite(FYSTLCD_WRITE_VAR);
+    //SERIAL_ECHO("varAddr:");
+    //SERIAL_PRINT((uint8_t)(varAddr >> 8),16);
+    //SERIAL_PRINTLN((uint8_t)varAddr,16);
+    ftWrite((uint8_t)(varAddr >> 8));
+    ftWrite((uint8_t)varAddr);
+    while (len-- > 0) {
+      if(*str) {
+        //SERIAL_ECHO(*str);
+        ftWrite(*str++);
+        
       }
-    #else
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_FRAM_HEAD2);
-      ftWrite(len + 3);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      //SERIAL_ECHO("varAddr:"); // geo-f:test
-      //SERIAL_PRINT((uint8_t)(varAddr >> 8),16); // geo-f:test
-      //SERIAL_PRINTLN((uint8_t)varAddr,16); // geo-f:test
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-      while (len-- > 0) {
-        if(*str) {
-          //SERIAL_ECHO(*str); // geo-f:test
-          ftWrite(*str++);
-          
-        }
-        else {
-          //SERIAL_ECHO("x");
-          ftWrite(0);
-        }
+      else {
+        //SERIAL_ECHO("x");
+        ftWrite(0);
       }
-    #endif
+    }
+
   }
 
   void touch_lcd::ftPutsPGM(const uint16_t& varAddr, const char*str, uint8_t len) {
@@ -367,46 +283,26 @@
     char tlen = 0, ch;
     while (pgm_read_byte(t))
     {
-        tlen++;
-        t++;
+      tlen++;
+      t++;
     }
-    if (len == 0)len = tlen;
-
-    #if defined(FYSTLCD_FYS_CUSTOMIZED)
-      len++;
-      len >>= 1;
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-      ftWrite(len);
-      len <<= 1;
-      ch = pgm_read_byte(str);
-      while (len-- > 0) {
-        if (ch) {
-          ftWrite(ch);
-          str++;
-          ch = pgm_read_byte(str);
-        }
-        else ftWrite(0);
+    if (len == 0) len = tlen;
+    
+    ftWrite(FYSTLCD_FRAM_HEAD1);
+    ftWrite(FYSTLCD_FRAM_HEAD2);
+    ftWrite(len + 3);
+    ftWrite(FYSTLCD_WRITE_VAR);
+    ftWrite((uint8_t)(varAddr >> 8));
+    ftWrite((uint8_t)varAddr);
+    ch = pgm_read_byte(str);
+    while (len-- > 0) {
+      if (ch) {
+        ftWrite(ch);
+        str++;
+        ch = pgm_read_byte(str);
       }
-    #else
-      ftWrite(FYSTLCD_FRAM_HEAD1);
-      ftWrite(FYSTLCD_FRAM_HEAD2);
-      ftWrite(len + 3);
-      ftWrite(FYSTLCD_WRITE_VAR);
-      ftWrite((uint8_t)(varAddr >> 8));
-      ftWrite((uint8_t)varAddr);
-      ch = pgm_read_byte(str);
-      while (len-- > 0) {
-        if (ch) {
-          ftWrite(ch);
-          str++;
-          ch = pgm_read_byte(str);
-        }
-        else ftWrite(0);
-      }
-    #endif
+      else ftWrite(0);
+    }
   }
 
   void touch_lcd::ftPutTime(millis_t& pt) {
