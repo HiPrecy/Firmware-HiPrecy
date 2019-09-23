@@ -98,7 +98,7 @@ int16_t lcd_preheat_fan_speed[FILAMENTS] = { PREHEAT_1_FAN_SPEED, \
                                              PREHEAT_7_FAN_SPEED, \
                                              PREHEAT_8_FAN_SPEED };
 
-static uint8_t iconState = 0;
+static uint8_t lcd_icon_state = 0;
 
 float movDis, movFeedrate;
 generalVoidFun periodFun = nullptr;
@@ -1405,7 +1405,7 @@ static void dwin_on_cmd_print(uint16_t tval)
         case VARVAL_PRINT_STOP:
           if (card.isFileOpen()) {                           
             lcd_sdcard_stop();              
-            iconState = 0;
+            lcd_icon_state = 0;
           }
           break;
             
@@ -1456,7 +1456,7 @@ static void dwin_on_cmd_print(uint16_t tval)
           case VARVAL_PRINT_CONFIRM:
             card.startFileprint();
             print_job_timer.start();
-            iconState = 0;
+            lcd_icon_state = 0;
             #if FYSTLCD_PAGE_EXIST(PRINT)
             lcd_set_page(FTPAGE(PRINT));
             #endif
@@ -2082,12 +2082,12 @@ static void lcd_period_prompt_report() {
 
   myFysTLcd.ftCmdJump(2);//10A6 reserved
   
-  iconState++;
-  if (iconState > 9) iconState = 0;
+  lcd_icon_state++;
+  if (lcd_icon_state > 9) lcd_icon_state = 0;
   
   #if FAN_COUNT > 0
     if (fanSpeeds[active_extruder] > 0)
-        myFysTLcd.ftCmdPut16(iconState);
+        myFysTLcd.ftCmdPut16(lcd_icon_state);
     else
         myFysTLcd.ftCmdJump(2);
   #else
@@ -2096,7 +2096,7 @@ static void lcd_period_prompt_report() {
 
   #if ENABLED(SDSUPPORT)
     if (card.sdprinting)// print ico
-      myFysTLcd.ftCmdPut16(iconState);
+      myFysTLcd.ftCmdPut16(lcd_icon_state);
     else
   #endif
   
@@ -2104,7 +2104,7 @@ static void lcd_period_prompt_report() {
   
   myFysTLcd.ftCmdJump(2);//10A9 reserved
   if (ftState&FTSTATE_AUTOPID_ING) {
-    myFysTLcd.ftCmdPut16(iconState);//10AA auto PID ico
+    myFysTLcd.ftCmdPut16(lcd_icon_state);//10AA auto PID ico
   }
   else {
     myFysTLcd.ftCmdJump(2);
