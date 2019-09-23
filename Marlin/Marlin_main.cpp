@@ -15551,6 +15551,8 @@ void loop() {
       #if ENABLED(POWER_LOSS_RECOVERY)
         card.removeJobRecoveryFile();
       #endif
+
+      touch_lcd_aborting_print = false;
     }
 
   #endif // SDSUPPORT

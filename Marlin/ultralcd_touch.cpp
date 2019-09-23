@@ -21,7 +21,6 @@
   #include "duration_t.h"
 #endif
 
-
 char utf_char_buf;
 char utf_string_buf[64];
 
@@ -1286,7 +1285,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     #if ENABLED(PARK_HEAD_ON_PAUSE)
       enqueue_and_echo_commands_P(PSTR("M125"));
     #endif
-    //lcd_reset_status();
+    lcd_reset_status();
   }
 
   void lcd_sdcard_resume() {
@@ -1296,17 +1295,17 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       card.startFileprint();
       print_job_timer.start();
     #endif
-    //lcd_reset_status();
+    lcd_reset_status();
   }
-
-  bool abort_sd_printing; // =false
 
   void lcd_sdcard_stop() {
     wait_for_heatup = wait_for_user = false;
-    abort_sd_printing = true;
-    //SERIAL_ECHOLNPGM("stop!");
-    //lcd_setstatusPGM(PSTR(MSG_PRINT_ABORTED), -1);
+    card.abort_sd_printing = true;
+    lcd_setstatusPGM(PSTR(MSG_PRINT_ABORTED), -1);
     //lcd_return_to_status();
+    #if FYSTLCD_PAGE_EXIST(MAIN)
+      lcd_set_page(FTPAGE(MAIN));
+    #endif
   }
 
 #endif // SDSUPPORT 
@@ -1318,7 +1317,7 @@ static void dwin_on_cmd_print(uint16_t tval)
     if (card.cardOK) {      
       switch (tval) {
         case VARVAL_PRINT_FILELIST:
-          if(abort_sd_printing) return ;
+          if(card.abort_sd_printing) return ;
 
           if (print_job_timer.isRunning() || print_job_timer.isPaused()) {
             #if FYSTLCD_PAGE_EXIST(PRINT)
@@ -1402,9 +1401,6 @@ static void dwin_on_cmd_print(uint16_t tval)
             
         case VARVAL_PRINT_STOP:
           if (card.isFileOpen()) {                           
-            #if FYSTLCD_PAGE_EXIST(MAIN)
-              lcd_set_page(FTPAGE(MAIN));
-            #endif
             lcd_sdcard_stop();              
             iconState = 0;
           }
