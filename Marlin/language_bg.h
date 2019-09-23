@@ -44,6 +44,7 @@
 #define MSG_TMC_Z_CALIBRATION               _UxGT("Калибровка Z")
 #define MSG_SET_HOME_OFFSETS                _UxGT("Задай Начало")
 #define MSG_SET_ORIGIN                      _UxGT("Изходна точка")
+#define MSG_PREHEAT                         _UxGT("Подгряване")
 #define MSG_PREHEAT_1                       _UxGT("Подгряване PLA")
 #define MSG_PREHEAT_1_N                     _UxGT("Подгряване PLA")
 #define MSG_PREHEAT_1_ALL                   _UxGT("Подгр. PLA Всички")

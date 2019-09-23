@@ -60,6 +60,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Setze Homeversatz")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Homeversatz aktiv")
 #define MSG_SET_ORIGIN                      _UxGT("Setze Nullpunkte") //"G92 X0 Y0 Z0" commented out in ultralcd.cpp
+#define MSG_PREHEAT                         _UxGT("Vorwärmen")
 #define MSG_PREHEAT_1                       _UxGT("Vorwärmen PLA")
 #define MSG_PREHEAT_1_N                     _UxGT("Vorwärmen PLA ")
 #define MSG_PREHEAT_1_ALL                   _UxGT("Vorw. PLA Alles")

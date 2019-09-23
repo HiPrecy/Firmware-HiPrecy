@@ -61,6 +61,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("キジュンオフセットセッテイ")         // "Set home offsets"
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("オフセットガテキヨウサレマシタ")       // "Offsets applied"
 #define MSG_SET_ORIGIN                      _UxGT("キジュンセット")                 // "Set origin"
+#define MSG_PREHEAT                         _UxGT("ヨネツ")                   // "Preheat"
 #define MSG_PREHEAT_1                       _UxGT("PLA ヨネツ")                   // "Preheat PLA"
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   _UxGT("PLA スベテヨネツ")              // " All"

@@ -52,6 +52,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Achustar desfases")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Desfase aplicau")
 #define MSG_SET_ORIGIN                      _UxGT("Establir orichen")
+#define MSG_PREHEAT                         _UxGT("Precalentar")
 #define MSG_PREHEAT_1                       _UxGT("Precalentar PLA")
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" Tot")

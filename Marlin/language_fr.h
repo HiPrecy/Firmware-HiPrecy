@@ -56,6 +56,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Regl. decal. origine")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Decalages appliques")
 #define MSG_SET_ORIGIN                      _UxGT("Regler origine")
+#define MSG_PREHEAT                         _UxGT("Prechauffage")
 #define MSG_PREHEAT_1                       _UxGT("Prechauffage PLA")
 #define MSG_PREHEAT_1_N                     _UxGT("Prechauff. PLA ")
 #define MSG_PREHEAT_1_ALL                   _UxGT("Prech. PLA Tout")

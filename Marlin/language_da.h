@@ -53,6 +53,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Sæt forsk. af home")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Forsk. er nu aktiv")
 #define MSG_SET_ORIGIN                      _UxGT("Sæt origin")
+#define MSG_PREHEAT                         _UxGT("Forvarm")
 #define MSG_PREHEAT_1                       _UxGT("Forvarm PLA")
 #define MSG_PREHEAT_1_N                     _UxGT("Forvarm PLA ")
 #define MSG_PREHEAT_1_ALL                   _UxGT("Forvarm PLA Alle")

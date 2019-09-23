@@ -112,6 +112,9 @@
 #ifndef MSG_SET_ORIGIN
   #define MSG_SET_ORIGIN                      _UxGT("Set origin")
 #endif
+#ifndef MSG_PREHEAT
+  #define MSG_PREHEAT                         _UxGT("Preheat")
+#endif
 #ifndef MSG_PREHEAT_1
   #define MSG_PREHEAT_1                       _UxGT("Preheat PLA")
 #endif

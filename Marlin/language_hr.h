@@ -52,6 +52,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Postavi home offsete")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Offsets postavljeni")
 #define MSG_SET_ORIGIN                      _UxGT("Postavi ishodište")
+#define MSG_PREHEAT                         _UxGT("Predgrij")
 #define MSG_PREHEAT_1                       _UxGT("Predgrij PLA")
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" Sve")

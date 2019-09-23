@@ -47,6 +47,7 @@
 #define MSG_SET_HOME_OFFSETS                "\xbe\xbf\xbb\xbc\xbd\xc0\xc1"
 #define MSG_HOME_OFFSETS_APPLIED            "Offsets applied"
 #define MSG_SET_ORIGIN                      "\xbe\xbf\xbc\xbd"
+#define MSG_PREHEAT                         "\xc3\xc4"
 #define MSG_PREHEAT_1                       "\xc3\xc4 PLA"
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 " "
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 " \xc5\xc6"

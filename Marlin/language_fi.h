@@ -48,6 +48,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Set home offsets")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Offsets applied")
 #define MSG_SET_ORIGIN                      _UxGT("Aseta origo")
+#define MSG_PREHEAT                         _UxGT("Esilämmitä")
 #define MSG_PREHEAT_1                       _UxGT("Esilämmitä PLA")
 #define MSG_PREHEAT_1_N                     _UxGT("Esilämmitä PLA ")
 #define MSG_PREHEAT_1_ALL                   _UxGT("Esilä. PLA Kaikki")

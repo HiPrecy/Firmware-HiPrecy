@@ -55,6 +55,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Zet home offsets")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("H offset toegep.")
 #define MSG_SET_ORIGIN                      _UxGT("Nulpunt instellen")
+#define MSG_PREHEAT                         _UxGT("voorverwarmen")
 #define MSG_PREHEAT_1                       _UxGT("PLA voorverwarmen")
 #define MSG_PREHEAT_1_N                     _UxGT("PLA voorverw. ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1_N _UxGT("aan")

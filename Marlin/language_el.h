@@ -53,6 +53,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Ορισμός βασικών μετατοπίσεων") //SHORTEN
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Εφαρμόστηκαν οι μετατοπίσεις") //SHORTEN
 #define MSG_SET_ORIGIN                      _UxGT("Ορισμός προέλευσης")
+#define MSG_PREHEAT                         _UxGT("Προθέρμανση")
 #define MSG_PREHEAT_1                       _UxGT("Προθέρμανση PLA")
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" όλα")

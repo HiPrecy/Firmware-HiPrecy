@@ -56,6 +56,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Imp. offset home")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Offset applicato")
 #define MSG_SET_ORIGIN                      _UxGT("Imposta Origine")
+#define MSG_PREHEAT                         _UxGT("Preriscalda")
 #define MSG_PREHEAT_1                       _UxGT("Preriscalda PLA")
 #define MSG_PREHEAT_1_N                     _UxGT("Preris.PLA ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1_N _UxGT("Tutto")

@@ -58,6 +58,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Запомнить парковку")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Коррекции применены")
 #define MSG_SET_ORIGIN                      _UxGT("Запомнить ноль")
+#define MSG_PREHEAT                         _UxGT("Преднагрев")
 #define MSG_PREHEAT_1                       _UxGT("Преднагрев PLA")
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" всё")

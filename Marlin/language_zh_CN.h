@@ -55,6 +55,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("设置原点偏移")  //"Set home offsets"
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("偏移已启用")  //"Offsets applied"
 #define MSG_SET_ORIGIN                      _UxGT("设置原点")  //"Set origin"
+#define MSG_PREHEAT                         _UxGT("预热")  //"Preheat"
 #define MSG_PREHEAT_1                       _UxGT("预热PLA")  //"Preheat PLA"
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")  //MSG_PREHEAT_1 " "
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" 全部")  //MSG_PREHEAT_1 " All"

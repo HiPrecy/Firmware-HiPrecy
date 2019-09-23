@@ -51,6 +51,7 @@
 #define MSG_SET_HOME_OFFSETS                "Definir desvio"
 #define MSG_HOME_OFFSETS_APPLIED            "Offsets applied"
 #define MSG_SET_ORIGIN                      "Definir origem"
+#define MSG_PREHEAT                         "Pre-aquecer"
 #define MSG_PREHEAT_1                       "Pre-aquecer PLA"
 #define MSG_PREHEAT_1_N                     "Pre-aquecer PLA"
 #define MSG_PREHEAT_1_ALL                   "Pre-aq. PLA Tudo"

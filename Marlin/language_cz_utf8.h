@@ -67,6 +67,7 @@
 #define MSG_SET_HOME_OFFSETS                _UxGT("Nastavit ofsety")
 #define MSG_HOME_OFFSETS_APPLIED            _UxGT("Ofsety nastaveny")
 #define MSG_SET_ORIGIN                      _UxGT("Nastavit počátek")
+#define MSG_PREHEAT                         _UxGT("Zahřát")
 #define MSG_PREHEAT_1                       _UxGT("Zahřát PLA")
 #define MSG_PREHEAT_1_N                     MSG_PREHEAT_1 _UxGT(" ")
 #define MSG_PREHEAT_1_ALL                   MSG_PREHEAT_1 _UxGT(" vše")
