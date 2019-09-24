@@ -30,7 +30,7 @@ char utf_string_buf[64];
 
 char lcd_status_message[MAX_MESSAGE_LENGTH];
 uint8_t lcd_status_update_delay = 1, // First update one loop delayed
-        lcd_status_message_level;    // Higher level blocks lower level
+        lcd_status_message_level = 0;   // Higher level blocks lower level
        
 typedef void(*generalVoidFun)();
 
@@ -686,9 +686,14 @@ static void filament_unload() {
   }
 }
 
-static void dwin_set_status(const char* msg) 
-{
+static void dwin_set_status(const char* msg) {
   touch_lcd::ftPuts(VARADDR_STATUS, msg, VARADDR_STATUS_MSG_LEN);
+}
+
+static void dwin_clear_pop_infos() {
+  for(int i = 0;i < INFOS_NUM;i++) {
+    touch_lcd::ftPuts(VARADDR_POP_INFOS[i], " ", INFO_POPUP_LEN);
+  }  
 }
 
 // valid ：flag to update list
@@ -3371,16 +3376,20 @@ void lcd_status_printf_P(const uint8_t level, const char * const fmt, ...) {
 void lcd_setalertstatusPGM(const char * const message) {
   lcd_setstatusPGM(message, 1);
   //lcd_return_to_status();
-  /*
-  #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
-    //lcd_pop_page(FTPAGE(INFO_WAITING));
-    lcd_set_page(FTPAGE(INFO_WAITING));
-    SERIAL_ECHOLN("lcd_pop_page"); //test
-  #endif
-  */
 }
 
 void lcd_reset_alert_level() { lcd_status_message_level = 0; }
+
+void lcd_print_utf(const char *str, uint8_t n) {
+  char c;
+  uint8_t i=0;
+  while (n && (c = *str)) {
+    n -= charset_mapper(c);
+    ++str;
+    utf_string_buf[i++] = utf_char_buf;
+  }
+  utf_string_buf[i] = '\0';
+}
 
 // we just save the translated char to utf_char_buf
 // n : the length of the text box
@@ -3397,23 +3406,24 @@ void lcd_printPGM_utf(const char *str, uint8_t n) {
 
 // just fill in datas
 void lcd_kill_screen() {
-  SERIAL_ECHOLN("lcd_kill_screen"); //test
+  dwin_clear_pop_infos();
 
-  SERIAL_ECHOLNPAIR("lcd_status_message ",lcd_status_message); //test
+  //SERIAL_ECHOLN("lcd_kill_screen");
+
+  //SERIAL_ECHOLNPAIR("lcd_status_message ",lcd_status_message);
   touch_lcd::ftPuts(VARADDR_POP_INFOS[0], lcd_status_message, INFO_POPUP_LEN);
 
   lcd_printPGM_utf(PSTR(MSG_HALTED),INFO_POPUP_LEN);
-  SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf); //test
+  //SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf);
   touch_lcd::ftPuts(VARADDR_POP_INFOS[1], utf_string_buf, INFO_POPUP_LEN);
 
   lcd_printPGM_utf(PSTR(MSG_PLEASE_RESET),INFO_POPUP_LEN);
-  SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf); //test
+  //SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf);
   touch_lcd::ftPuts(VARADDR_POP_INFOS[2], utf_string_buf, INFO_POPUP_LEN);
 
-    #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
-    //lcd_pop_page(FTPAGE(INFO_WAITING));
+  #if FYSTLCD_PAGE_EXIST(INFO_WAITING)    
     lcd_set_page(FTPAGE(INFO_WAITING));
-    SERIAL_ECHOLN("lcd_pop_page"); //test
+    //SERIAL_ECHOLN("lcd_pop_page");
   #endif
 }
 
@@ -3445,7 +3455,6 @@ void lcd_reset_status() {
  *
  */
 void kill_screen(const char* lcd_msg) {
-  SERIAL_ECHOLN("kill_screen"); //test
   lcd_setalertstatusPGM(lcd_msg); 
   lcd_kill_screen();       
 }

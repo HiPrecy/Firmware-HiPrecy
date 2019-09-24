@@ -272,7 +272,7 @@
       }
       else {
         //SERIAL_ECHO("x");
-        ftWrite(0);
+        ftWrite(' ');
       }
     }
 
