@@ -1834,13 +1834,12 @@ static void dwin_on_cmd(millis_t& tNow) {
 
   uint16_t tval = touch_lcd::ftCmdVal16();
 
-  // geo-f 
-  /*
+  #if 0
   SERIAL_ECHOPGM(" Addr:");
   reportCmdContent(touch_lcd::ftAddr);
   SERIAL_ECHOPGM(" Val:");
   reportCmdContent(tval);
-  */
+  #endif
   
   uint8_t cmd[2];
   switch (touch_lcd::ftAddr) {
@@ -2037,7 +2036,7 @@ static void dwin_on_cmd(millis_t& tNow) {
   case VARADDR_JUMP_PAGE:
       retPageId = tval; 
       currentPageId = tval;
-      //SERIAL_ECHOPGM("Page to"); // geo-f
+      //SERIAL_ECHOPGM("Page to");
       //MYSERIAL0.println((int)tval);
       break;
       
