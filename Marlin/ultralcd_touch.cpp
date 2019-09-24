@@ -152,6 +152,16 @@ static void dwin_on_cmd(millis_t& tNow);
 static void lcd_init_datas();
 static void dwin_set_status(const char * msg);
 
+#if ENABLED(BABYSTEPPING)
+  long babysteps_done = 0;
+  int16_t lcd_babysteps = 0;
+  #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
+    static void lcd_babystep_zoffset();
+  #else
+    static void lcd_babystep_z();
+  #endif
+#endif
+
 void lcd_init() {
   #if defined (SDSUPPORT) && PIN_EXISTS(SD_DETECT)
     pinMode(SD_DETECT_PIN, INPUT);
@@ -460,7 +470,7 @@ static void lcd_save() {
     enqueue_and_echo_commands_P(PSTR("M500"));
     ftState &= ~FTSTATE_NEED_SAVE_PARAM;
   }
-  else 
+  else
     ftState |= FTSTATE_NEED_SAVE_PARAM;
 }
 
@@ -471,6 +481,46 @@ static inline void dwin_pid_auto_tune() {
   enqueue_and_echo_command(str);
   ftState |= FTSTATE_AUTOPID_ING;
 }
+
+#if ENABLED(BABYSTEPPING)
+
+  void _lcd_babystep(const AxisEnum axis, const char* msg) {
+    UNUSED(msg);
+    const int16_t babystep_increment = (int32_t)10 * (BABYSTEP_MULTIPLICATOR);
+    thermalManager.babystep_axis(axis, babystep_increment);
+    babysteps_done += babystep_increment;
+  }
+
+  #if ENABLED(BABYSTEP_XY)
+    void _lcd_babystep_x() { _lcd_babystep(X_AXIS, PSTR(MSG_BABYSTEP_X)); }
+    void _lcd_babystep_y() { _lcd_babystep(Y_AXIS, PSTR(MSG_BABYSTEP_Y)); }
+    void lcd_babystep_x() { _lcd_babystep_x();} // need to clear babysteps_done before calling
+    void lcd_babystep_y() { _lcd_babystep_y();} // need to clear babysteps_done before calling
+  #endif
+
+  #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
+
+    void lcd_babystep_zoffset() {
+      const int16_t babystep_increment = lcd_babysteps * (BABYSTEP_MULTIPLICATOR);
+      const float new_zoffset = zprobe_zoffset + planner.steps_to_mm[Z_AXIS] * babystep_increment;
+      SERIAL_ECHOLNPAIR("babystep_increment:",babystep_increment);
+      SERIAL_ECHOLNPAIR("new_zoffset:",new_zoffset);
+      if (WITHIN(new_zoffset, Z_PROBE_OFFSET_RANGE_MIN, Z_PROBE_OFFSET_RANGE_MAX)) {
+          thermalManager.babystep_axis(Z_AXIS, babystep_increment);
+          SERIAL_ECHOLNPAIR("btd:",thermalManager.babystepsTodo[Z_AXIS]);
+          zprobe_zoffset = new_zoffset;
+      }
+    }
+
+  #else // !BABYSTEP_ZPROBE_OFFSET
+
+    void _lcd_babystep_z() { _lcd_babystep(Z_AXIS, PSTR(MSG_BABYSTEP_Z)); }
+    void lcd_babystep_z() { _lcd_babystep_z();} // need to clear babysteps_done before calling
+
+  #endif // !BABYSTEP_ZPROBE_OFFSET
+
+#endif // BABYSTEPPING
+
 
 static void moveAxis(AxisEnum axis, float val) {
 		if(planner.movesplanned()!=0) return;
@@ -968,6 +1018,18 @@ static void dwin_on_cmd_tool(uint16_t tval) {
             break;
         }       
       break;
+
+    #if ENABLED(BABYSTEPPING)
+      #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
+        case VARVAL_TOOL_BABYSTEP_UP_Z:
+          lcd_babystep_zoffset();
+        break;
+        case VARVAL_TOOL_BABYSTEP_DOWN_Z:
+          lcd_babysteps = -lcd_babysteps;
+          lcd_babystep_zoffset();
+        break;
+      #endif
+    #endif
       
     case VARVAL_TOOL_M999:
       Running = true;
@@ -1782,6 +1844,10 @@ static void dwin_on_cmd(millis_t& tNow) {
   
   uint8_t cmd[2];
   switch (touch_lcd::ftAddr) {
+  case VARADDR_TOOL_ZOFFSET_BABYSTEPS:
+    lcd_babysteps = tval;
+    break;
+    
   case VARADDR_TOOL:
       dwin_on_cmd_tool(tval);
       break;

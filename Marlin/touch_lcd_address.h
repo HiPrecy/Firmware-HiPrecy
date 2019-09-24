@@ -47,8 +47,8 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARADDR_PARAM_EXTRUDERS_TEMP            0x1580  
 #define     VARADDR_PARAM_SYSTEM                    0x15A0  
 
-
 // Tool
+#define     VARADDR_TOOL_ZOFFSET_BABYSTEPS          0x1600
 #define     VARADDR_TOOL                            0x1700  
 
 #define     VARADDR_TOOL_TUNEPID_ENTER              0x0001  
@@ -110,7 +110,6 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_E1                  0x003D  
 #define     VARVAL_TOOL_PREHEAT_E2                  0x003E 
 #define     VARVAL_TOOL_PREHEAT_BED                 0x003F  //
-
 #define     VARVAL_TOOL_PREHEAT_PLA                 0x0040  
 #define     VARVAL_TOOL_PREHEAT_ABS                 0x0041 
 #define     VARVAL_TOOL_PREHEAT_PVA                 0x0042  //
@@ -119,7 +118,6 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_HIPS                0x0045 
 #define     VARVAL_TOOL_PREHEAT_PP                  0x0046 
 #define     VARVAL_TOOL_PREHEAT_CUSTOM              0x0047
-
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PLA       0x0049  //
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_ABS       0x004A  //
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PVA       0x004B  //
@@ -128,7 +126,6 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_HIPS      0x004E 
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PP        0x004F 
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_CUSTOM    0x0050
-
 #define     VARVAL_TOOL_PREHEAT_BED_PLA             0x0052  //
 #define     VARVAL_TOOL_PREHEAT_BED_ABS             0x0053  //
 #define     VARVAL_TOOL_PREHEAT_BED_PVA             0x0054  //
@@ -137,10 +134,11 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_BED_HIPS            0x0057 
 #define     VARVAL_TOOL_PREHEAT_BED_PP              0x0058 
 #define     VARVAL_TOOL_PREHEAT_BED_CUSTOM          0x0059
-
-
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_APPLY        0x0060
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL       0x0061
+
+#define     VARVAL_TOOL_BABYSTEP_UP_Z               0x0062
+#define     VARVAL_TOOL_BABYSTEP_DOWN_Z             0x0063
 
 // Print
 #define     VARADDR_PRINT                           0x1701  
