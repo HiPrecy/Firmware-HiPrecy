@@ -8,9 +8,10 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 // Status data
 #define     VARADDR_STATUS_SD                       0x1070  
 #define     VARADDR_STATUS_AXIS_LOCK                0x1071  
-#define     VARADDR_STATUS_FAN                      0x1072  
+#define     VARADDR_STATUS_FAN                      0x1072
 #define     VARADDR_STATUS_SERVO                    0x1073  
 #define     VARADDR_STATUS_WIFI                     0x1074  
+#define     VARADDR_STATUS_FAN1                     0x1075
 
 // Period data
 #define     VARADDR_PROMPT_DATA                     0x10A0  
@@ -64,7 +65,7 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_COOLDOWN_ACTIVE             0x000D  
 #define     VARVAL_TOOL_AUTOPID                     0x000E  
 #define     VARVAL_TOOL_LOCK_AXIS                   0x000F  
-#define     VARVAL_TOOL_FAN_SWITCH                  0x0010  
+#define     VARVAL_TOOL_FAN_SWITCH                  0x0010
 #define     VARVAL_TOOL_SERVO_SWITCH                0x0011  
 #define     VARVAL_TOOL_SERVO_RESET                 0x0012  
 #define     VARVAL_TOOL_EXCHANGE_T                  0x0013  
@@ -136,9 +137,10 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_BED_CUSTOM          0x0059
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_APPLY        0x0060
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL       0x0061
+#define     VARVAL_TOOL_FAN1_SWITCH                 0x0062
 
-#define     VARVAL_TOOL_BABYSTEP_UP_Z               0x0062
-#define     VARVAL_TOOL_BABYSTEP_DOWN_Z             0x0063
+#define     VARVAL_TOOL_BABYSTEP_UP_Z               0x0063
+#define     VARVAL_TOOL_BABYSTEP_DOWN_Z             0x0064
 
 // Print
 #define     VARADDR_PRINT                           0x1701  

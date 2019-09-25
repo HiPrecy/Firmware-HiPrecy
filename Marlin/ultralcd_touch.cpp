@@ -1059,19 +1059,37 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       }
       myFysTLcd.ftCmdSend();
       break;
-    #if FAN_COUNT>0
+      
+    #if FAN_COUNT > 0
+    
       case VARVAL_TOOL_FAN_SWITCH:
         myFysTLcd.ftCmdStart(VARADDR_STATUS_FAN);
-        if (fanSpeeds[active_extruder]>0) {
-          fanSpeeds[active_extruder]=0;
-          myFysTLcd.ftCmdJump(2);
+        if (fanSpeeds[0]>0) {
+          fanSpeeds[0]=0;
+          myFysTLcd.ftCmdPut16(0);
         }
         else {
-          fanSpeeds[active_extruder]=255;
+          fanSpeeds[0]=255;
           myFysTLcd.ftCmdPut16(1);
         }
         myFysTLcd.ftCmdSend();
         break;
+
+      #if FAN_COUNT > 1
+        case VARVAL_TOOL_FAN1_SWITCH:
+          myFysTLcd.ftCmdStart(VARADDR_STATUS_FAN1);
+          if (fanSpeeds[1]>0) {
+            fanSpeeds[1]=0;
+            myFysTLcd.ftCmdPut16(0);
+          }
+          else {
+            fanSpeeds[1]=255;
+            myFysTLcd.ftCmdPut16(1);
+          }
+          myFysTLcd.ftCmdSend();
+          break;
+      #endif
+        
     #endif
     
     #if HAS_SERVOS
