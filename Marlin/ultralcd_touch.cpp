@@ -223,23 +223,23 @@ static void lcd_init_datas() {
   myFysTLcd.ftCmdSend();
 }
 
-#define START_UP_END 99
+#define BOOT_SCREEN_ICONS 99
 
 static void lcd_boot_screen(millis_t& tNow)  {
   static millis_t period = 30; // 8ms
   static uint16_t pic_num = 0;
 
   if(myLcdEvt & ((uint16_t)0x0001 << LCDEVT_IF_CONTINE_PRINT)) {
-    pic_num=START_UP_END+2;
+    pic_num = BOOT_SCREEN_ICONS+2;
     return;
   }
 
-  if(pic_num>START_UP_END+1)  {
+  if(pic_num > BOOT_SCREEN_ICONS+1)  {
     return;
   }
   
   if (tNow > period) {
-    if(pic_num>START_UP_END)  {
+    if(pic_num > BOOT_SCREEN_ICONS)  {
       #if FYSTLCD_PAGE_EXIST(MAIN)
         lcd_set_page_force(FTPAGE(MAIN));
       #endif  
@@ -247,7 +247,7 @@ static void lcd_boot_screen(millis_t& tNow)  {
       return;
     }
     
-    myFysTLcd.ftCmdStart(VARADDR_START_UP);   
+    myFysTLcd.ftCmdStart(VARADDR__BOOT_SCREEN);
     myFysTLcd.ftCmdPut16(pic_num);
     myFysTLcd.ftCmdSend();
     period = tNow + 30;
