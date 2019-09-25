@@ -68,7 +68,7 @@ static uint8_t ftState = 0x00;
 #define TEMPERTURE_PREHEAT_CHOISE_BED_PP     22
 #define TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM 23
 
-char tempChoice = 0;
+char filament_choice = 0;
 char optionId = 0;
 uint16_t currentPageId = 0xFFFF, retPageId = 0xFFFF;
 uint16_t dwinFileWindowTopIndex = 0;
@@ -104,7 +104,7 @@ float movDis, movFeedrate;
 generalVoidFun periodFun = nullptr;
 static touch_lcd myFysTLcd;
 
-#define MOVE_E_LENGTH_EACH_TIME 2.0
+#define MOVE_E_LENGTH_EACH_TIME 1.0
 #define MOVE_E_FEEDRATE 3.0
 #define MOVE_XYZ_FEEDRATE 50.0
 
@@ -590,22 +590,22 @@ static void manualLevelingMove(float x, float y) {
 static int16_t filament_temp_preheat(bool ifHeatBed = false) {
     int16_t tempe, tempb;
     uint8_t extruder_index = 0;
-    if (tempChoice < FILAMENTS){
+    if (filament_choice < FILAMENTS){
       extruder_index = 0;
-      tempe = lcd_preheat_hotend_temp[tempChoice];
+      tempe = lcd_preheat_hotend_temp[filament_choice];
       //SERIAL_ECHOLNPAIR("tempb1:", tempb);
     }
     #if EXTRUDERS>1
-      else if(tempChoice < FILAMENTS*2){
+      else if(filament_choice < FILAMENTS*2){
         extruder_index = 1;
-        tempe = lcd_preheat_hotend_temp[tempChoice-FILAMENTS];
-        tempb = lcd_preheat_bed_temp[tempChoice-FILAMENTS];
+        tempe = lcd_preheat_hotend_temp[filament_choice-FILAMENTS];
+        tempb = lcd_preheat_bed_temp[filament_choice-FILAMENTS];
       }
     #endif
     #if HAS_TEMP_BED
-      else if(tempChoice < FILAMENTS*3){
+      else if(filament_choice < FILAMENTS*3){
         extruder_index = 0;
-        tempb = lcd_preheat_bed_temp[tempChoice-FILAMENTS*2];
+        tempb = lcd_preheat_bed_temp[filament_choice-FILAMENTS*2];
       }
     #endif
     else{
@@ -627,9 +627,9 @@ static int16_t filament_temp_preheat(bool ifHeatBed = false) {
     #if FAN_COUNT > 0
     if(extruder_index<FAN_COUNT) {
       #if EXTRUDERS>1
-        fanSpeeds[extruder_index] = lcd_preheat_fan_speed[tempChoice-FILAMENTS];
+        fanSpeeds[extruder_index] = lcd_preheat_fan_speed[filament_choice-FILAMENTS];
       #else
-        fanSpeeds[extruder_index] = lcd_preheat_fan_speed[tempChoice];
+        fanSpeeds[extruder_index] = lcd_preheat_fan_speed[filament_choice];
       #endif
     }
     #endif
@@ -658,11 +658,11 @@ static int16_t filament_temp_preheat(bool ifHeatBed = false) {
 static void filament_load() {
   int16_t tempe = filament_temp_preheat(false) - 5;
   uint8_t extru_index = 0;
-  if (tempChoice < FILAMENTS){
+  if (filament_choice < FILAMENTS){
     extru_index = 0;
   }
   #if EXTRUDERS>1
-    else if(tempChoice < FILAMENTS*2){
+    else if(filament_choice < FILAMENTS*2){
       extru_index = 1;
     }
   #endif
@@ -679,11 +679,11 @@ static void filament_load() {
 static void filament_unload() {
   int16_t tempe = filament_temp_preheat(false) - 5;
   uint8_t extru_index = 0;
-  if (tempChoice < FILAMENTS){
+  if (filament_choice < FILAMENTS){
     extru_index = 0;
   }
   #if EXTRUDERS>1
-    else if(tempChoice < FILAMENTS*2){
+    else if(filament_choice < FILAMENTS*2){
       extru_index = 1;
     }
   #endif
@@ -862,126 +862,126 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       break;
     
     case VARVAL_TOOL_PREHEAT_PLA:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_ABS:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_PVA:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PVA;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PVA;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_FLEX:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_PET:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_HIPS:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_HIPS;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_HIPS;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_PP:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PP;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PP;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_CUSTOM:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM;
       #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_CUSTOM)
         lcd_set_page(FTPAGE(TEMP_PREHEAT_CUSTOM));
       #endif      
       break;
       
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PLA:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_ABS:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PVA:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PVA;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PVA;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_FLEX:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_FLEX;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_FLEX;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PET:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PET;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PET;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_HIPS:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_HIPS;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_HIPS;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PP:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PP;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PP;
       filament_temp_preheat();
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_CUSTOM:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM;
       #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_CUSTOM)
         lcd_set_page(FTPAGE(TEMP_PREHEAT_CUSTOM));
       #endif      
       break;
 
     case VARVAL_TOOL_PREHEAT_BED_PLA:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_PLA;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PLA;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_ABS:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_ABS;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_ABS;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_PVA:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_PVA;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PVA;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_FLEX:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_FLEX;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_FLEX;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_PET:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_PET;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PET;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_HIPS:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_HIPS;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_HIPS;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_PP:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_PP;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PP;
       filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_BED_CUSTOM:
-      tempChoice = TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM;
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM;
       #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_CUSTOM)
         lcd_set_page(FTPAGE(TEMP_PREHEAT_CUSTOM));
       #endif      
@@ -991,7 +991,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       // get the temperture
       myFysTLcd.ftCmdStart(VARADDR_TUNE_PREHEAT_CUSTOM);
       if (myFysTLcd.ftCmdReceive(2)) {        
-        switch(tempChoice) { 
+        switch(filament_choice) { 
           case TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM: 
           case TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM:
             myFysTLcd.ftCmdGetI16(lcd_preheat_hotend_temp[FILAMENTS-1]); 
@@ -1003,7 +1003,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
             filament_temp_preheat(true);
             break;
         }       
-        SERIAL_ECHOLNPAIR("tempChoice", tempChoice);
+        SERIAL_ECHOLNPAIR("filament_choice", filament_choice);
         SERIAL_ECHOLNPAIR("lcd_preheat_bed_temp", lcd_preheat_bed_temp[FILAMENTS-1]);
       }
       
@@ -1015,7 +1015,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       break;
 
     case VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL:
-      switch(tempChoice) { 
+      switch(filament_choice) { 
           case TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM: 
             #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_E1)
               lcd_set_page(FTPAGE(TEMP_PREHEAT_E1));
@@ -1143,7 +1143,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     case VARVAL_TOOL_AUTO_STOP_FILAMENT:
       if (periodFun == filament_load || periodFun == filament_unload) {
         periodFun = nullptr;
-        tempChoice = 0;
+        filament_choice = 0;
       }
       stepper.quick_stop();
       thermalManager.setTargetHotend(0, 0);
@@ -1938,6 +1938,9 @@ static void dwin_on_cmd(millis_t& tNow) {
   #endif
   
   case VARADDR_FILAMENT_AUTO_ADD:
+    if(tval > VARVAL_FILAMENT_OPE_EXTRU2) {
+      enqueue_and_echo_commands_now_P(PSTR("G28 XY"));
+    }
     switch (tval) {
       case VARVAL_FILAMENT_OPE_EXTRU1:
         #if FYSTLCD_PAGE_EXIST(FILAMENT_LOAD_1)
@@ -1953,37 +1956,37 @@ static void dwin_on_cmd(millis_t& tNow) {
         break;
         
       case VARVAL_FILAMENT_OPE_EXTRU1_PLA:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
         periodFun = filament_load;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_ABS:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
         periodFun = filament_load;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_PET:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
         periodFun = filament_load;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_FLEX:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
         periodFun = filament_load;
         break;
 
       #if EXTRUDERS>1
         case VARVAL_FILAMENT_OPE_EXTRU2_PLA:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
           periodFun = filament_load;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_ABS:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
           periodFun = filament_load;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_PET:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
           periodFun = filament_load;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_FLEX:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
           periodFun = filament_load;          
           break;      
       #endif
@@ -1991,6 +1994,9 @@ static void dwin_on_cmd(millis_t& tNow) {
     break;
     
   case VARADDR_FILAMENT_AUTO_REMOVE:
+    if(tval > VARVAL_FILAMENT_OPE_EXTRU2) {
+      enqueue_and_echo_commands_now_P(PSTR("G28 XY"));
+    }
     switch (tval) {
       case VARVAL_FILAMENT_OPE_EXTRU1:
         #if FYSTLCD_PAGE_EXIST(FILAMENT_UNLOAD_1)
@@ -2006,38 +2012,38 @@ static void dwin_on_cmd(millis_t& tNow) {
         break;
 
       case VARVAL_FILAMENT_OPE_EXTRU1_PLA:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
         periodFun = filament_unload;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_ABS:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
         periodFun = filament_unload;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_PET:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
         periodFun = filament_unload;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_FLEX:
-        tempChoice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
         periodFun = filament_unload;
         break;
 
       #if EXTRUDERS>1
         case VARVAL_FILAMENT_OPE_EXTRU2_PLA:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
           periodFun = filament_unload;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_ABS:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
           periodFun = filament_unload;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_PET:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
           periodFun = filament_unload;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_FLEX:
-          tempChoice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
-          periodFun = filament_unload;          
+          filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          periodFun = filament_unload;
           break;      
       #endif   
     }      

@@ -207,6 +207,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARADDR_MOVE_DIS                        0x1704
 #define     VARADDR_MOVE_SPEED                      0x1705
 
+// filament
 #define     VARADDR_FILAMENT_AUTO_ADD               0x1706
 #define     VARADDR_FILAMENT_AUTO_REMOVE            0x1707
 #define     VARVAL_FILAMENT_OPE_EXTRU1              0x0001
