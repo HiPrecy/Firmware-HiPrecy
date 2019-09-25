@@ -210,9 +210,10 @@
   #define LCDEVT_IF_CONTINE_PRINT             0
   #define LCDEVT_READY_CONTINE_PRINT          1
   #define LCDEVT_DETAIL_EXTRUDER              2
-  #define LCDEVT_AUTOPID_STOP                 3
-  #define LCDEVT_LEVELING_COMPLETE            4
-  #define LCDEVT_PRINTING_COMPLETE            5
+  #define LCDEVT_AUTOPID_SUCCESS              3
+  #define LCDEVT_AUTOPID_FAIL                 4
+  #define LCDEVT_LEVELING_COMPLETE            5
+  #define LCDEVT_PRINTING_COMPLETE            6
 
   #include "touch_lcd.h"
 	

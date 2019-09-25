@@ -301,9 +301,20 @@ static void lcd_event() {
         touch_lcd::ftPuts(VARADDR_PRINTFILE_NAME, sdFileName, FYSTLCD_FILENAME_LEN);
       #endif
       break;
-    
-    case LCDEVT_AUTOPID_STOP:
+
+    case LCDEVT_AUTOPID_SUCCESS:
       ftState &= ~FTSTATE_AUTOPID_ING;
+      ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
+      sendActiveExtrudersParam();
+      lcd_setstatusPGM("PID autotune finished .", 1);
+      break;
+    
+    case LCDEVT_AUTOPID_FAIL:
+      ftState &= ~FTSTATE_AUTOPID_ING;
+      ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
+      sendActiveExtrudersParam();
+      lcd_setstatusPGM("PID autotune fail .", 1);
+      break;
       
     case LCDEVT_DETAIL_EXTRUDER:
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
@@ -474,7 +485,7 @@ static void lcd_save() {
     ftState |= FTSTATE_NEED_SAVE_PARAM;
 }
 
-static inline void dwin_pid_auto_tune() {
+static inline void lcd_pid_autotune() {
   char str[30];
   readActiveExtrudersParam();
   sprintf(str, "M303 E%d C5 S%d U1", active_extruder, thermalManager.target_temperature[active_extruder]);
@@ -1045,7 +1056,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       thermalManager.setTargetHotend(0, active_extruder);
       break;
     case VARVAL_TOOL_AUTOPID:
-      dwin_pid_auto_tune();
+      lcd_pid_autotune();
       break;
     case VARVAL_TOOL_LOCK_AXIS:
       myFysTLcd.ftCmdStart(VARADDR_STATUS_AXIS_LOCK);

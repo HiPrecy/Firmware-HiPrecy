@@ -409,6 +409,9 @@ uint8_t Temperature::soft_pwm_amount[HOTENDS];
       #endif
       if (current > target + MAX_OVERSHOOT_PID_AUTOTUNE) {
         SERIAL_PROTOCOLLNPGM(MSG_PID_TEMP_TOO_HIGH);
+        #if ENABLED(TOUCH_LCD)
+          lcd_set_event(LCDEVT_AUTOPID_FAIL);
+        #endif
         break;
       }
 
