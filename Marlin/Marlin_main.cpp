@@ -7179,7 +7179,7 @@ inline void gcode_M17() {
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_STATUS);
       #elif ENABLED(TOUCH_LCD)
         if (show_lcd) { // Show status screen 
-          dwin_popup(PSTR("     Target temperture\n     Too low for\n     filament load"), EPPT_INFO_POPUP);
+          dwin_popup(PSTR("Target temperture too low for filament load"), EPPT_INFO_POPUP);
         }
       #endif
 
@@ -7219,7 +7219,7 @@ inline void gcode_M17() {
         lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_LOAD, mode);
     #elif ENABLED(TOUCH_LCD)
       if (show_lcd) // Show "wait for load" message
-        dwin_popup(PSTR("\n    Wait for filament load."), EPPT_INFO_WAITING);
+        dwin_popup(PSTR("Wait for filament load."), EPPT_INFO_WAITING);
     #endif
 
     // Slow Load filament
@@ -7246,7 +7246,7 @@ inline void gcode_M17() {
           lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_CONTINUOUS_PURGE);
       #elif ENABLED(TOUCH_LCD)
 				if (show_lcd)
-      		dwin_popup(PSTR("\n    Wait for filament purge."), EPPT_INFO_WAITING);
+      		dwin_popup(PSTR("Wait for filament purge."), EPPT_INFO_WAITING);
    		#endif
       wait_for_user = true;
       for (float purge_count = purge_length; purge_count > 0 && wait_for_user; --purge_count)
@@ -7263,7 +7263,7 @@ inline void gcode_M17() {
               lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_PURGE, mode);
           #elif ENABLED(TOUCH_LCD)
 						if (show_lcd)
-      				dwin_popup(PSTR("\n    Wait for filament purge."), EPPT_INFO_WAITING);
+      				dwin_popup(PSTR("Wait for filament purge."), EPPT_INFO_WAITING);
           #endif
 
           // Extrude filament to get into hotend
@@ -7579,7 +7579,7 @@ inline void gcode_M17() {
       // "Wait for print to resume"
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_RESUME);
     #elif ENABLED(TOUCH_LCD)
-      dwin_popup(PSTR("\n   Wait for print to resume."),EPPT_INFO_WAITING);
+      dwin_popup(PSTR("Wait for print to resume."),EPPT_INFO_WAITING);
     #endif
     
     // Intelligent resuming
