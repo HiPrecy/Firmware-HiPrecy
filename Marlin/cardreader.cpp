@@ -286,7 +286,8 @@ void CardReader::initsd() {
 }
 
 void CardReader::release() {
-  sdprinting = false;
+  //sdprinting = false;
+  stopSDPrint();
   cardOK = false;
 }
 
@@ -434,7 +435,7 @@ void CardReader::openFile(char * const path, const bool read, const bool subcall
 void CardReader::removeFile(const char * const name) {
   if (!cardOK) return;
 
-  stopSDPrint();
+  //stopSDPrint();
 
   SdFile *curDir;
   const char * const fname = diveToFile(curDir, name, false);
@@ -900,7 +901,8 @@ void CardReader::printingHasFinished() {
     startFileprint();
   }
   else {
-    sdprinting = false;
+    //sdprinting = false;
+    stopSDPrint();
 
     #if ENABLED(POWER_LOSS_RECOVERY)
       removeJobRecoveryFile();
@@ -956,6 +958,10 @@ void CardReader::printingHasFinished() {
   void CardReader::closeJobRecoveryFile() { jobRecoveryFile.close(); }
 
   bool CardReader::jobRecoverFileExists() {
+    if (jobRecoveryFile.isOpen()) {
+      jobRecoveryFile.close();
+      return true;
+    }
     const bool exists = jobRecoveryFile.open(&root, job_recovery_file_name, O_READ);
     if (exists) jobRecoveryFile.close();
     return exists;
@@ -977,7 +983,6 @@ void CardReader::printingHasFinished() {
   void CardReader::removeJobRecoveryFile() {
     job_recovery_info.valid_head = job_recovery_info.valid_foot = job_recovery_commands_count = 0;
     if (jobRecoverFileExists()) {
-      closefile();
       removeFile(job_recovery_file_name);
       #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
         SERIAL_PROTOCOLPGM("Power-loss file delete");
