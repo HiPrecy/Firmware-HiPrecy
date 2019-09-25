@@ -158,20 +158,30 @@ void check_print_job_recovery() {
           }
         #endif
 
-        dtostrf(job_recovery_info.current_position[Z_AXIS] + 2, 1, 3, str_1);
+        // Move back to the saved XY
+        dtostrf(job_recovery_info.current_position[X_AXIS], 1, 3, str_1);
+        dtostrf(job_recovery_info.current_position[Y_AXIS], 1, 3, str_2);
+        sprintf_P(job_recovery_commands[ind++], PSTR("G1 X%s Y%s F3000"), str_1, str_2);
+
+        // Move back to the saved Z and E
+        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z0 F200"));
+        dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
         dtostrf(job_recovery_info.current_position[E_CART]
           #if ENABLED(SAVE_EACH_CMD_MODE)
             - 5
           #endif
           , 1, 3, str_2
         );
-        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2); // Current Z + 2 and E
+        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2);
 
+        // Restore the feedrate
+        sprintf_P(job_recovery_commands[ind++], PSTR("G1 F%d"), job_recovery_info.feedrate);
+  
         uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
         while (c--) {
           strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
           r = (r + 1) % BUFSIZE;
-        }
+        }        
 
         if (job_recovery_info.sd_filename[0] == '/') job_recovery_info.sd_filename[0] = ' ';
         sprintf_P(job_recovery_commands[ind++], PSTR("M23 %s"), job_recovery_info.sd_filename);
@@ -227,7 +237,7 @@ void save_job_recovery_info() {
 
     // Machine state
     COPY(job_recovery_info.current_position, current_position);
-    job_recovery_info.feedrate = feedrate_mm_s;
+    job_recovery_info.feedrate = uint16_t(feedrate_mm_s * 60.0f);
 
     #if HOTENDS > 1
       job_recovery_info.active_hotend = active_extruder;
