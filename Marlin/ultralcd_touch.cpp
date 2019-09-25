@@ -247,7 +247,7 @@ static void lcd_boot_screen(millis_t& tNow)  {
       return;
     }
     
-    myFysTLcd.ftCmdStart(VARADDR__BOOT_SCREEN);
+    myFysTLcd.ftCmdStart(VARADDR_BOOT_SCREEN);
     myFysTLcd.ftCmdPut16(pic_num);
     myFysTLcd.ftCmdSend();
     period = tNow + 30;
