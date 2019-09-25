@@ -206,6 +206,14 @@
   #endif
 
 #elif ENABLED(TOUCH_LCD) // TOUCH_LCD
+
+  #define LCDEVT_IF_CONTINE_PRINT             0
+  #define LCDEVT_READY_CONTINE_PRINT          1
+  #define LCDEVT_DETAIL_EXTRUDER              2
+  #define LCDEVT_AUTOPID_STOP                 3
+  #define LCDEVT_LEVELING_COMPLETE            4
+  #define LCDEVT_PRINTING_COMPLETE            5
+
   #include "touch_lcd.h"
 	
   #if HAS_SERVOS
@@ -214,6 +222,7 @@
   #endif
 	
   extern uint16_t retPageId;
+  extern uint16_t myLcdEvt;
   extern const float homing_feedrate_mm_s[];
   extern int16_t lcd_preheat_hotend_temp[FILAMENTS];
   extern int16_t lcd_preheat_bed_temp[FILAMENTS];
@@ -250,6 +259,7 @@
   void lcd_set_page_print();
   void lcd_set_page_main();
   void lcd_showFilename();
+  inline void lcd_set_event(uint16_t event) { myLcdEvt |= ((uint16_t)0x0001 << event); }
 
   extern uint8_t commands_in_queue;
   
@@ -319,15 +329,4 @@
   void lcd_reselect_last_file();
 #endif
 
-#if ENABLED(TOUCH_LCD)
-
-  #define LCDEVT_IF_CONTINE_PRINT             0
-  #define LCDEVT_READY_CONTINE_PRINT          1
-  #define LCDEVT_DETAIL_EXTRUDER              2
-  #define LCDEVT_AUTOPID_STOP                 3
-  #define LCDEVT_LEVELING_COMPLETE            4
-  #define LCDEVT_PRINTING_COMPLETE            5
-  extern uint16_t myLcdEvt;
-
-#endif
 #endif // ULTRALCD_H

@@ -424,8 +424,8 @@ class Temperature {
       #endif
 
       #if ENABLED(TOUCH_LCD)
-        myLcdEvt |= ((uint16_t)0x0001 << LCDEVT_DETAIL_EXTRUDER);//geo-f 
-	  #endif
+        lcd_set_event(LCDEVT_DETAIL_EXTRUDER);
+	    #endif
     }
 
     FORCE_INLINE static bool isHeatingHotend(const uint8_t e) {
@@ -467,8 +467,8 @@ class Temperature {
         #endif
 
         #if ENABLED(TOUCH_LCD)
-          myLcdEvt |= ((uint16_t)0x0001 << LCDEVT_DETAIL_EXTRUDER);
-	    #endif
+          lcd_set_event(LCDEVT_DETAIL_EXTRUDER);
+	      #endif
       }
 
       #if WATCH_THE_BED
