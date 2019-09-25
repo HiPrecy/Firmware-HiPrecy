@@ -1258,16 +1258,8 @@ static void dwin_on_cmd_tool(uint16_t tval) {
         myFysTLcd.ftCmdSend();
       #endif
       break;
-    case VARVAL_TOOL_EMERGENCY_STOP_MOTOR: 
-      #if ENABLED(FYS_POWERBREAK_STEPPER_STATUS)
-        unsigned char _sreg = SREG; 
-        sei();
-        powerBreakStepperStatus = 1;
-        while (powerBreakStepperStatus == 1);
-        powerBreakStepperStatus = 0;
-        disable_all_steppers();
-        SREG = _sreg;
-      #endif
+    case VARVAL_TOOL_EMERGENCY_STOP_MOTOR:       
+      disable_all_steppers();
       break;
     }
 }
@@ -2156,10 +2148,12 @@ static void lcd_period_prompt_report() {
   if (lcd_icon_state > 9) lcd_icon_state = 0;
   
   #if FAN_COUNT > 0
-    if (fanSpeeds[active_extruder] > 0)
-        myFysTLcd.ftCmdPut16(lcd_icon_state);
-    else
-        myFysTLcd.ftCmdJump(2);
+    if (fanSpeeds[active_extruder] > 0) {
+      myFysTLcd.ftCmdPut16(lcd_icon_state);      
+    } 
+    else {
+      myFysTLcd.ftCmdJump(2);
+    }
   #else
     myFysTLcd.ftCmdJump(2);
   #endif
