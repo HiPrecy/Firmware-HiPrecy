@@ -156,8 +156,8 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARVAL_PRINT_STOP                       0x0023  
 #define     VARVAL_PRINT_TUNE_ENTER                 0x0024  
 #define     VARVAL_PRINT_TUNE_APPLY                 0x0025  
-#define     VARVAL_PRINT_CONTINUE                   0x0026  
-#define     VARVAL_PRINT_CANCEL                     0x0027  
+#define     VARVAL_PRINT_RECOVERY_YES               0x0026
+#define     VARVAL_PRINT_RECOVERY_NO                0x0027
 #define     VARVAL_PRINT_CONFIRM                    0x0028  
 #define     VARVAL_PRINT_SD_REFRESH                 0x0029  
 #define     VARVAL_PRINT_REPRINT                    0x002A  

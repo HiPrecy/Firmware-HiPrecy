@@ -255,24 +255,13 @@ static void lcd_boot_screen(millis_t& tNow)  {
   }
 }
 
-void lcd_update()
-{
-    millis_t t = millis();
-    lcd_event();
-    lcd_check();
-    dwin_on_cmd(t);
-    lcd_period_task(t);    
-    
-    #if ENABLED(POWER_LOSS_RECOVERY)
-    if (job_recovery_commands_count && job_recovery_phase == JOB_RECOVERY_IDLE) {
-      //lcd_goto_screen(lcd_job_recovery_menu);
-      job_recovery_phase = JOB_RECOVERY_MAYBE; // Waiting for a response
-      myLcdEvt |= ((uint16_t)0x0001 << LCDEVT_IF_CONTINE_PRINT);
-    }
-    #endif
-
-    // boot screen loop
-    lcd_boot_screen(t);    
+void lcd_update() {
+  millis_t t = millis();
+  lcd_event();
+  lcd_check();
+  dwin_on_cmd(t);
+  lcd_period_task(t);
+  lcd_boot_screen(t);
 }
 
 static void lcd_event() {
@@ -296,8 +285,8 @@ static void lcd_event() {
       #if ENABLED(SDSUPPORT)
         if (card.longFilename[0]) strncpy(sdFileName, card.longFilename, FYSTLCD_FILENAME_LEN);
         else strncpy(sdFileName, card.filename, FYSTLCD_FILENAME_LEN);
-        t = strchr(sdFileName, '.');
-        while (*t)*t++ = '\0';
+        //t = strchr(sdFileName, '.');
+        //while (*t)*t++ = '\0';
         touch_lcd::ftPuts(VARADDR_PRINTFILE_NAME, sdFileName, FYSTLCD_FILENAME_LEN);
       #endif
       break;
@@ -395,6 +384,14 @@ static void lcd_check() {
 
       //refresh();
       dwinFileWindowTopIndex = 0;
+    }
+  #endif
+
+  #if ENABLED(POWER_LOSS_RECOVERY)
+    if (job_recovery_commands_count && job_recovery_phase == JOB_RECOVERY_IDLE) {
+      //lcd_goto_screen(lcd_job_recovery_menu);
+      job_recovery_phase = JOB_RECOVERY_MAYBE; // Waiting for a response
+      lcd_set_event(LCDEVT_IF_CONTINE_PRINT);
     }
   #endif
 
@@ -1530,12 +1527,14 @@ static void dwin_on_cmd_print(uint16_t tval)
           break;
 
         #if ENABLED(POWER_LOSS_RECOVERY)
-          case VARVAL_PRINT_CONTINUE: 
-            lcd_power_loss_recovery_resume();
+          case VARVAL_PRINT_RECOVERY_YES:
             SERIAL_PROTOCOLPGM("Power-loss continue");
+            touch_lcd::ftPuts(VARADDR_PRINTFILE_NAME, job_recovery_info.sd_filename, FYSTLCD_FILENAME_LEN);
+            lcd_power_loss_recovery_resume();
             break;              
-          case VARVAL_PRINT_CANCEL: 
+          case VARVAL_PRINT_RECOVERY_NO:
             SERIAL_PROTOCOLPGM("Power-loss cancel");
+            touch_lcd::ftPuts(VARADDR_PRINTFILE_NAME, " ", FYSTLCD_FILENAME_LEN);
             lcd_power_loss_recovery_cancel();
             break;
         #endif
@@ -1719,9 +1718,10 @@ static void dwin_on_cmd_print(uint16_t tval)
           break;
 
         #if ENABLED(POWER_LOSS_RECOVERY)
-        case VARVAL_PRINT_CANCEL:
-          lcd_power_loss_recovery_cancel();
-          break;
+          case VARVAL_PRINT_RECOVERY_NO:
+            touch_lcd::ftPuts(VARADDR_PRINTFILE_NAME, " ", FYSTLCD_FILENAME_LEN);
+            lcd_power_loss_recovery_cancel();
+            break;
         #endif
       }
     }
