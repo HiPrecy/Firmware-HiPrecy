@@ -132,8 +132,8 @@
   #include "planner.h"
   #include "enum.h"
 
-  #if TMC2130STEPPER_VERSION < 0x020201
-    #error "Update TMC2130Stepper library to 2.2.1 or newer."
+  #if TMC2130STEPPER_VERSION < 0x020501
+    #error "Update TMC2130Stepper library to 2.5.1 or newer."
   #endif
 
   #if ENABLED(TMC_USE_SW_SPI)
