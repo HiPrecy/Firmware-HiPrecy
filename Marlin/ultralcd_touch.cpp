@@ -1628,7 +1628,7 @@ static void dwin_on_cmd_print(uint16_t tval)
               			}
               			else {              			  
               			  SERIAL_ECHOLNPAIR("file select:", card.filename);
-                      #ifndef FILE_PRINT_NEED_CONRIRM                  
+                      #ifndef FILE_PRINT_NEED_CONRIRM
                         lcd_set_page(FTPAGE(PRINT));
                       #endif
 
