@@ -255,16 +255,6 @@ static void lcd_boot_screen(millis_t& tNow)  {
   }
 }
 
-void lcd_update() {
-  millis_t t = millis();
-  lcd_event();
-  lcd_check();
-  dwin_on_cmd(t);
-  lcd_task();
-  lcd_period_task(t);
-  lcd_boot_screen(t);
-}
-
 static void lcd_event() {
   if (myLcdEvt == 0x0000) return;
   uint8_t n;
@@ -483,6 +473,16 @@ static void lcd_save() {
   }
   else
     ftState |= FTSTATE_NEED_SAVE_PARAM;
+}
+
+void lcd_update() {
+  millis_t t = millis();
+  lcd_event();
+  lcd_check();
+  dwin_on_cmd(t);
+  lcd_task();
+  lcd_period_task(t);
+  lcd_boot_screen(t);
 }
 
 static inline void lcd_pid_autotune() {
