@@ -260,6 +260,7 @@ void lcd_update() {
   lcd_event();
   lcd_check();
   dwin_on_cmd(t);
+  lcd_task();
   lcd_period_task(t);
   lcd_boot_screen(t);
 }
@@ -412,15 +413,17 @@ static void lcd_check() {
   }
 }
 
-static void lcd_period_task(millis_t& tNow)  {
-  static millis_t period = 1000;
-  
+static void lcd_task() {
   if ((ftState&FTSTATE_NEED_SAVE_PARAM) \
       && (commands_in_queue < BUFSIZE)) {
     enqueue_and_echo_commands_P(PSTR("M500"));
     ftState &= ~FTSTATE_NEED_SAVE_PARAM;
   }
-  
+}
+
+static void lcd_period_task(millis_t& tNow)  {
+  static millis_t period = 1000;
+   
   if ( tNow > period || \
        (ftState&FTSTATE_EXECUTE_PERIOD_TASK_NOW)) {
       
