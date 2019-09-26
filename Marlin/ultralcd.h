@@ -207,6 +207,8 @@
 
 #elif ENABLED(TOUCH_LCD) // TOUCH_LCD
 
+  #define FILE_PRINT_NEED_CONRIRM
+
   #define LCDEVT_IF_CONTINE_PRINT             0
   #define LCDEVT_READY_CONTINE_PRINT          1
   #define LCDEVT_DETAIL_EXTRUDER              2

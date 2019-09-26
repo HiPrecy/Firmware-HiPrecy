@@ -1621,9 +1621,6 @@ static void dwin_on_cmd_print(uint16_t tval)
               		//{
               		  card.getfilename(realIndex);
               			if (card.filenameIsDir) {
-              				// Build the new directory, and ensure it's terminated with a forward slash
-              				//m_acCurrentDirectory.cat(m_oFileInfo.fileName);
-              				//m_acCurrentDirectory.cat('/');
               				card.chdir(card.filename);                				
               				dwinFileWindowTopIndex = card.get_num_Files();
               				SERIAL_ECHOLNPAIR("isDir index:", dwinFileWindowTopIndex);
@@ -1631,13 +1628,7 @@ static void dwin_on_cmd_print(uint16_t tval)
               			}
               			else {              			  
               			  SERIAL_ECHOLNPAIR("file select:", card.filename);
-                      #if defined(FILE_PRINT_NEED_CONRIRM)
-                      
-                        #if FYSTLCD_PAGE_EXIST(PRINTFILE_CONFIRM)
-                         lcd_set_page(FTPAGE(PRINTFILE_CONFIRM));
-                        #endif
-                        
-                      #elif FYSTLCD_PAGE_EXIST(PRINT)
+                      #ifndef FILE_PRINT_NEED_CONRIRM                  
                         lcd_set_page(FTPAGE(PRINT));
                       #endif
 
