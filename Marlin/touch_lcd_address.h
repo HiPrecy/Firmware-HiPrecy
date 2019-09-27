@@ -4,7 +4,6 @@
 static const uint16_t VARADDR_FILES_NAME[] = { 0x1010, 0x1020, 0x1030, 0x1040, 0x1050 };
 static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARADDR_FILES_NAME[0]);
 
-
 // Status data
 #define     VARADDR_STATUS_SD                       0x1070  
 #define     VARADDR_STATUS_AXIS_LOCK                0x1071  
