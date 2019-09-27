@@ -21,6 +21,10 @@
   #include "duration_t.h"
 #endif
 
+#if ENABLED(FIRST_LAYER_CAL)
+  #include "first_lay_cal.h"
+#endif
+
 char utf_char_buf;
 char utf_string_buf[64];
 
@@ -42,6 +46,7 @@ static uint8_t ftState = 0x00;
 #define FTSTATE_AUTOPID_ING               0x10    // auto pid
 #define FTSTATE_ACTIVE_WARNING            0x20    // 
 #define FTSTATE_STATUS_MESSAGE_NOW        0x40    // show the lcd status message immediatelly
+#define FTSTATE_FIRST_LAYER_CAL           0x80    // first layer cal
 
 #define TEMPERTURE_PREHEAT_CHOISE_E1_PLA    0
 #define TEMPERTURE_PREHEAT_CHOISE_E1_ABS    1
@@ -116,6 +121,10 @@ static int16_t oldFanSpeed = 0;
 static uint16_t oldFeedratePercentage = 0;
 
 bool touch_lcd_aborting_print = false;
+
+#if ENABLED(FIRST_LAYER_CAL)
+  static uint8_t first_layer_cal_step = 0;
+#endif
 
 static void sendParam_Tune();
 static void readParam_Tune();
@@ -403,12 +412,102 @@ static void lcd_check() {
   }
 }
 
+#if ENABLED(FIRST_LAYER_CAL)
+
+static void lcd_task_first_layer_cal() {
+  if(ftState&FTSTATE_FIRST_LAYER_CAL) {
+
+		char cmd1[30];
+		static uint8_t filament = 0;
+
+    // if user dont confirm live adjust Z value by pressing the knob,
+    // we are saving last value by timeout to status screen
+		//if(first_layer_cal_step>1) lcd_timeoutToStatus.start();
+
+    if (!planner.has_blocks_queued() && commands_in_queue==0) { //  && !saved_printing
+      switch(first_layer_cal_step) {
+      case 0:
+        first_layer_cal_step = 11;
+        break;
+      case 20:
+        filament = 0;
+        first_layer_cal_step = 11;
+        break;
+      case 21:
+        filament = 1;
+        first_layer_cal_step = 11;
+        break;
+      case 22:
+        filament = 2;
+        first_layer_cal_step = 11;
+        break;
+      case 23:
+        filament = 3;
+        first_layer_cal_step = 11;
+        break;
+      case 24:
+        filament = 4;
+        first_layer_cal_step = 11;
+        break;
+      case 11:
+        if(lay1cal_preheat())
+          first_layer_cal_step = 10;
+        break;
+      case 10:
+        lay1cal_load_filament(cmd1, filament);
+        first_layer_cal_step = 9;
+        break;
+      case 9:
+        //lcd_clear();
+        //menu_depth = 0;
+        //menu_submenu(lcd_babystep_z);
+        // popup zoffset menu
+        lay1cal_intro_line();
+        first_layer_cal_step = 8;
+        break;
+      case 8:
+        if(lay1cal_before_meander())
+          first_layer_cal_step = 7;
+        break;
+      case 7:
+        if(lay1cal_meander(cmd1))
+          first_layer_cal_step = 6;
+        break;
+      case 6:
+        if(lay1cal_square_loop(cmd1,0,16))
+          first_layer_cal_step = 2;
+        break;
+      case 2:
+        if(lay1cal_end()) {
+          //forceMenuExpire = true; //if user dont confirm live adjust Z value by pressing the knob, we are saving last value by timeout to status screen
+          first_layer_cal_step = 1;
+        }
+        break;
+      case 1:
+        lcd_setstatusPGM(WELCOME_MSG);
+        first_layer_cal_step = 0;
+        ftState &= ~FTSTATE_FIRST_LAYER_CAL;
+        //if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1) {
+        //  lcd_wizard(WizState::RepeatLay1Cal);
+        //}
+        break;
+      }
+	  }
+	}
+}
+
+#endif
+
 static void lcd_task() {
   if ((ftState&FTSTATE_NEED_SAVE_PARAM) \
       && (commands_in_queue < BUFSIZE)) {
     enqueue_and_echo_commands_P(PSTR("M500"));
     ftState &= ~FTSTATE_NEED_SAVE_PARAM;
   }
+
+  #if ENABLED(FIRST_LAYER_CAL)
+    lcd_task_first_layer_cal();
+  #endif
 }
 
 static void lcd_period_task(millis_t& tNow)  {
@@ -1045,6 +1144,13 @@ static void dwin_on_cmd_tool(uint16_t tval) {
           lcd_babystep_zoffset();
         break;
       #endif
+    #endif
+
+    #if ENABLED(FIRST_LAYER_CAL)
+    case VARVAL_TOOL_FIRST_LAYER_CAL:
+      first_layer_cal_step = 0;
+      ftState |= FTSTATE_FIRST_LAYER_CAL;
+      break;
     #endif
       
     case VARVAL_TOOL_M999:

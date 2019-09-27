@@ -142,6 +142,8 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_BABYSTEP_UP_Z               0x0063
 #define     VARVAL_TOOL_BABYSTEP_DOWN_Z             0x0064
 
+#define     VARVAL_TOOL_FIRST_LAYER_CAL             0x0065
+
 // Print
 #define     VARADDR_PRINT                           0x1701  
 
