@@ -108,32 +108,32 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_COOLDOWN_BED                0x0038  
 #define     VARVAL_TOOL_EMERGENCY_STOP_MOTOR        0x0039  
 
-#define     VARVAL_TOOL_PREHEAT_E1                  0x003D  
-#define     VARVAL_TOOL_PREHEAT_E2                  0x003E 
-#define     VARVAL_TOOL_PREHEAT_BED                 0x003F  //
-#define     VARVAL_TOOL_PREHEAT_PLA                 0x0040  
-#define     VARVAL_TOOL_PREHEAT_ABS                 0x0041 
-#define     VARVAL_TOOL_PREHEAT_PVA                 0x0042  //
-#define     VARVAL_TOOL_PREHEAT_FLEX                0x0043  //
-#define     VARVAL_TOOL_PREHEAT_PET                 0x0044 
-#define     VARVAL_TOOL_PREHEAT_HIPS                0x0045 
-#define     VARVAL_TOOL_PREHEAT_PP                  0x0046 
+#define     VARVAL_TOOL_PREHEAT_E1                  0x003D
+#define     VARVAL_TOOL_PREHEAT_E2                  0x003E
+#define     VARVAL_TOOL_PREHEAT_BED                 0x003F
+#define     VARVAL_TOOL_PREHEAT_PLA                 0x0040
+#define     VARVAL_TOOL_PREHEAT_ABS                 0x0041
+#define     VARVAL_TOOL_PREHEAT_PVA                 0x0042
+#define     VARVAL_TOOL_PREHEAT_FLEX                0x0043
+#define     VARVAL_TOOL_PREHEAT_PET                 0x0044
+#define     VARVAL_TOOL_PREHEAT_HIPS                0x0045
+#define     VARVAL_TOOL_PREHEAT_PP                  0x0046
 #define     VARVAL_TOOL_PREHEAT_CUSTOM              0x0047
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PLA       0x0049  //
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_ABS       0x004A  //
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PVA       0x004B  //
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_FLEX      0x004C  //
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PET       0x004D 
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_HIPS      0x004E 
-#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PP        0x004F 
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PLA       0x0049
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_ABS       0x004A
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PVA       0x004B
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_FLEX      0x004C
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PET       0x004D
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_HIPS      0x004E
+#define     VARVAL_TOOL_PREHEAT_EXTRUDER2_PP        0x004F
 #define     VARVAL_TOOL_PREHEAT_EXTRUDER2_CUSTOM    0x0050
-#define     VARVAL_TOOL_PREHEAT_BED_PLA             0x0052  //
-#define     VARVAL_TOOL_PREHEAT_BED_ABS             0x0053  //
-#define     VARVAL_TOOL_PREHEAT_BED_PVA             0x0054  //
-#define     VARVAL_TOOL_PREHEAT_BED_FLEX            0x0055  //
-#define     VARVAL_TOOL_PREHEAT_BED_PET             0x0056 
-#define     VARVAL_TOOL_PREHEAT_BED_HIPS            0x0057 
-#define     VARVAL_TOOL_PREHEAT_BED_PP              0x0058 
+#define     VARVAL_TOOL_PREHEAT_BED_PLA             0x0052
+#define     VARVAL_TOOL_PREHEAT_BED_ABS             0x0053
+#define     VARVAL_TOOL_PREHEAT_BED_PVA             0x0054
+#define     VARVAL_TOOL_PREHEAT_BED_FLEX            0x0055
+#define     VARVAL_TOOL_PREHEAT_BED_PET             0x0056
+#define     VARVAL_TOOL_PREHEAT_BED_HIPS            0x0057
+#define     VARVAL_TOOL_PREHEAT_BED_PP              0x0058
 #define     VARVAL_TOOL_PREHEAT_BED_CUSTOM          0x0059
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_APPLY        0x0060
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL       0x0061
