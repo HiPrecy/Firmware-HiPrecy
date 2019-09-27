@@ -108,6 +108,9 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_COOLDOWN_BED                0x0038  
 #define     VARVAL_TOOL_EMERGENCY_STOP_MOTOR        0x0039  
 
+#define     VARVAL_TOOL_PREHEAT_SWITHCH_E1          0x003A
+#define     VARVAL_TOOL_PREHEAT_SWITHCH_E2          0x003B
+#define     VARVAL_TOOL_PREHEAT_SWITHCH_BED         0x003C
 #define     VARVAL_TOOL_PREHEAT_E1                  0x003D
 #define     VARVAL_TOOL_PREHEAT_E2                  0x003E
 #define     VARVAL_TOOL_PREHEAT_BED                 0x003F

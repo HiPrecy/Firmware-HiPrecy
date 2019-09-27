@@ -938,7 +938,36 @@ static void dwin_on_cmd_tool(uint16_t tval) {
         thermalManager.setTargetBed(0);
       #endif
       break;
-    
+
+    case VARVAL_TOOL_PREHEAT_SWITHCH_E1:
+      if(thermalManager.degTargetHotend(0) > 0) {
+        thermalManager.setTargetHotend(0, 0);
+      }
+      else {
+        thermalManager.setTargetHotend(PREHEAT_1_TEMP_HOTEND, 0);
+      }
+      break;
+
+    #if EXTRUDERS > 1
+    case VARVAL_TOOL_PREHEAT_SWITHCH_E2:
+      if(thermalManager.degTargetHotend(1) > 0) {
+        thermalManager.setTargetHotend(0, 1);
+      }
+      else {
+        thermalManager.setTargetHotend(PREHEAT_1_TEMP_HOTEND, 1);
+      }
+      break;
+    #endif
+
+    case VARVAL_TOOL_PREHEAT_SWITHCH_BED:
+      if(thermalManager.degTargetBed() > 0) {
+        thermalManager.setTargetBed(PREHEAT_1_TEMP_BED);
+      }
+      else {
+        thermalManager.setTargetBed(0);
+      }
+      break;
+      
     case VARVAL_TOOL_PREHEAT_E1: 
       #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_E1)
         lcd_set_page(FTPAGE(TEMP_PREHEAT_E1));
@@ -959,7 +988,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
         #endif 
       #endif
       break;
-    
+
     case VARVAL_TOOL_PREHEAT_PLA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
       filament_temp_preheat();
