@@ -16,7 +16,14 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 // Period data
 #define     VARADDR_PROMPT_DATA                     0x10A0  
 #define     VARADDR_PRINTFILE_NAME                  0x10D0  
-#define     VARADDR_PERIOD_DATA                     0x1100  
+#define     VARADDR_PERIOD_DATA                     0x1100
+#define     VARADDR_PERIOD_DATA_DEG_E1              0x1101
+#define     VARADDR_PERIOD_DATA_FAN0                0x1102
+#define     VARADDR_PERIOD_DATA_DEG_BED             0x1103
+#define     VARADDR_PERIOD_DATA_COORD_1             0x1104
+#define     VARADDR_PERIOD_DATA_COORD_2             0x1105
+#define     VARADDR_PERIOD_DATA_COORD_3             0x1106
+#define     VARADDR_PERIOD_DATA_COORD_4             0x1107
 #define     VARADDR_ZOFFSET_DATA                    0x1110  
 #define     VARADDR_EXTRUDERS_TEMP                  0x1111  // max end: 0x1114 , 5 extruders 
 #define     VARADDR_FANS                            0x1116 
