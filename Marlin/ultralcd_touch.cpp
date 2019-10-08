@@ -303,8 +303,8 @@ static void lcd_event() {
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
       lcd_setstatusPGM(PSTR("PID autotune finished ."), 1);
-      #if FYSTLCD_PAGE_EXIST(MAIN)
-        lcd_set_page(FTPAGE(MAIN));
+      #if FYSTLCD_PAGE_EXIST(PID_QUESTION)
+        lcd_set_page(FTPAGE(PID_QUESTION));
       #endif
       break;
     
@@ -313,8 +313,8 @@ static void lcd_event() {
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
       lcd_setstatusPGM(PSTR("PID autotune fail ."), 1);
-      #if FYSTLCD_PAGE_EXIST(MAIN)
-        lcd_set_page(FTPAGE(MAIN));
+      #if FYSTLCD_PAGE_EXIST(PID_QUESTION)
+        lcd_set_page(FTPAGE(PID_QUESTION));
       #endif
       break;
       
@@ -634,6 +634,14 @@ static inline void lcd_pid_autotune() {
   char str[30];
   readActiveExtrudersParam();
   sprintf(str, "M303 E%d C5 S210 U1", active_extruder);
+  enqueue_and_echo_command(str);
+  ftState |= FTSTATE_AUTOPID_ING;
+}
+
+static inline void lcd_pid_autotune_bed() {
+  char str[30];
+  readActiveExtrudersParam();
+  sprintf(str, "M303 E-1 C5 S70 U1");
   enqueue_and_echo_command(str);
   ftState |= FTSTATE_AUTOPID_ING;
 }
@@ -1226,8 +1234,10 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       thermalManager.setTargetHotend(0, active_extruder);
       break;
     case VARVAL_TOOL_AUTOPID:
-      //thermalManager.setTargetHotend(210, active_extruder);
       lcd_pid_autotune();
+      break;
+    case VARVAL_TOOL_AUTOPID_BED:
+      lcd_pid_autotune_bed();
       break;
     case VARVAL_TOOL_LOCK_AXIS:
       myFysTLcd.ftCmdStart(VARADDR_STATUS_AXIS_LOCK);

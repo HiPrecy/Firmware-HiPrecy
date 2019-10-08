@@ -69,9 +69,10 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_HOME_Z                      0x0007  
 #define     VARVAL_TOOL_SHUTDOWN                    0x0008  
 #define     VARVAL_TOOL_COOLDOWN                    0x0009
+#define     VARVAL_TOOL_AUTOPID_BED                 0x000B
 #define     VARVAL_TOOL_M999                        0x000C  
 #define     VARVAL_TOOL_COOLDOWN_ACTIVE             0x000D  
-#define     VARVAL_TOOL_AUTOPID                     0x000E  
+#define     VARVAL_TOOL_AUTOPID                     0x000E
 #define     VARVAL_TOOL_LOCK_AXIS                   0x000F  
 #define     VARVAL_TOOL_FAN_SWITCH                  0x0010
 #define     VARVAL_TOOL_SERVO_SWITCH                0x0011  
@@ -324,6 +325,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     PAGENUM_FILAMENT_UNLOADING              82
 #define     PAGENUM_FILAMENT_PURGE2                 84
 #define     PAGENUM_FIRST_LAYER_PRINT               96
+#define     PAGENUM_PID_QUESTION                    104
 #define     PAGENUM_SETTING                         120
 #define     PAGENUM_SETTING_MOTOR                   122
 #define     PAGENUM_SETTING_TEMP_PARA               126
