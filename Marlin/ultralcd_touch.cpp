@@ -177,6 +177,72 @@ static void dwin_set_status(const char * msg);
   #endif
 #endif
 
+static void dwin_update_fan_status_ico(uint8_t ifan) {
+  #if FAN_COUNT > 0
+
+    if(ifan == 0) {    
+      myFysTLcd.ftCmdStart(VARADDR_STATUS_FAN);
+      if (fanSpeeds[0]>0) {
+        myFysTLcd.ftCmdPut16(1);
+      }
+      else {
+        myFysTLcd.ftCmdPut16(0);
+      }
+      myFysTLcd.ftCmdSend();
+    }
+    #if FAN_COUNT > 1
+
+    else if(ifan == 1) {
+      myFysTLcd.ftCmdStart(VARADDR_STATUS_FAN1);
+      if (fanSpeeds[1]>0) {
+        myFysTLcd.ftCmdPut16(1);
+      }
+      else {
+        myFysTLcd.ftCmdPut16(0);
+      }
+      myFysTLcd.ftCmdSend();
+    }
+
+    #endif
+
+  #endif
+}
+
+static void dwin_update_e0_status() {
+  myFysTLcd.ftCmdStart(VARADDR_STATUS_E0);
+  if(thermalManager.degTargetHotend(0) > 0) {
+    myFysTLcd.ftCmdPut16(1);
+  }
+  else {
+    myFysTLcd.ftCmdPut16(0);
+  }
+  myFysTLcd.ftCmdSend();
+}
+
+#if EXTRUDERS > 1
+  static void dwin_update_e1_status() {
+    myFysTLcd.ftCmdStart(VARADDR_STATUS_E1);
+    if(thermalManager.degTargetHotend(1) > 0) {
+      myFysTLcd.ftCmdPut16(1);
+    }
+    else {
+      myFysTLcd.ftCmdPut16(0);
+    }
+    myFysTLcd.ftCmdSend();
+  }
+#endif
+
+static void dwin_update_bed_status() {
+  myFysTLcd.ftCmdStart(VARADDR_STATUS_BED);
+  if(thermalManager.degTargetBed() > 0) {
+    myFysTLcd.ftCmdPut16(1);
+  }
+  else {
+    myFysTLcd.ftCmdPut16(0);
+  }
+  myFysTLcd.ftCmdSend();
+}
+
 void lcd_init() {
   #if defined (SDSUPPORT) && PIN_EXISTS(SD_DETECT)
     pinMode(SD_DETECT_PIN, INPUT);
@@ -237,6 +303,14 @@ static void lcd_init_datas() {
   myFysTLcd.ftCmdStart(VARADDR_PRINT_TIME);
   myFysTLcd.ftPutTime(pt);
   myFysTLcd.ftCmdSend();
+
+  dwin_update_fan_status_ico(0);
+  dwin_update_fan_status_ico(1);
+  dwin_update_e0_status();
+  #if EXTRUDERS > 1
+    dwin_update_e1_status();
+  #endif
+  dwin_update_bed_status();
 }
 
 #define BOOT_SCREEN_ICONS 99
@@ -1000,6 +1074,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       else {
         thermalManager.setTargetHotend(PREHEAT_1_TEMP_HOTEND, 0);
       }
+      dwin_update_e0_status();
       break;
 
     #if EXTRUDERS > 1
@@ -1010,6 +1085,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       else {
         thermalManager.setTargetHotend(PREHEAT_1_TEMP_HOTEND, 1);
       }
+      dwin_update_e1_status();
       break;
     #endif
 
@@ -1020,6 +1096,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       else {
         thermalManager.setTargetBed(PREHEAT_1_TEMP_BED);
       }
+      dwin_update_bed_status();
       break;
       
     case VARVAL_TOOL_PREHEAT_E1: 
@@ -1255,30 +1332,24 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     #if FAN_COUNT > 0
     
       case VARVAL_TOOL_FAN_SWITCH:
-        myFysTLcd.ftCmdStart(VARADDR_STATUS_FAN);
         if (fanSpeeds[0]>0) {
           fanSpeeds[0]=0;
-          myFysTLcd.ftCmdPut16(0);
         }
         else {
           fanSpeeds[0]=255;
-          myFysTLcd.ftCmdPut16(1);
         }
-        myFysTLcd.ftCmdSend();
+        dwin_update_fan_status_ico(0);
         break;
 
       #if FAN_COUNT > 1
         case VARVAL_TOOL_FAN1_SWITCH:
-          myFysTLcd.ftCmdStart(VARADDR_STATUS_FAN1);
           if (fanSpeeds[1]>0) {
             fanSpeeds[1]=0;
-            myFysTLcd.ftCmdPut16(0);
           }
           else {
             fanSpeeds[1]=255;
-            myFysTLcd.ftCmdPut16(1);
           }
-          myFysTLcd.ftCmdSend();
+          dwin_update_fan_status_ico(1);
           break;
       #endif
         

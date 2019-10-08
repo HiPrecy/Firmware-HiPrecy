@@ -12,6 +12,9 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 #define     VARADDR_STATUS_SERVO                    0x1073  
 #define     VARADDR_STATUS_WIFI                     0x1074  
 #define     VARADDR_STATUS_FAN1                     0x1075
+#define     VARADDR_STATUS_E0                       0x1076
+#define     VARADDR_STATUS_E1                       0x1077
+#define     VARADDR_STATUS_BED                      0x1078
 
 // Period data
 #define     VARADDR_PROMPT_DATA                     0x10A0  
