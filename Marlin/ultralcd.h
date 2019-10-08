@@ -263,6 +263,7 @@
   void lcd_set_page_main();
   void lcd_showFilename();
   inline void lcd_set_event(uint16_t event) { myLcdEvt |= ((uint16_t)0x0001 << event); }
+  void lcd_flag_calibrate_z_done();
 
   extern uint8_t commands_in_queue;
   

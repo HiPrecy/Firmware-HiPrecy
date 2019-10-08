@@ -4,6 +4,7 @@
 static const uint16_t VARADDR_FILES_NAME[] = { 0x1010, 0x1020, 0x1030, 0x1040, 0x1050 };
 static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARADDR_FILES_NAME[0]);
 
+
 // Status data
 #define     VARADDR_STATUS_SD                       0x1070  
 #define     VARADDR_STATUS_AXIS_LOCK                0x1071  
@@ -52,7 +53,8 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARADDR_PARAM_EXTRUDERS_OFFSET          0x1540  
 #define     VARADDR_PARAM_EXTRUDERS_MOTOR           0x1560 
 #define     VARADDR_PARAM_EXTRUDERS_TEMP            0x1580  
-#define     VARADDR_PARAM_SYSTEM                    0x15A0  
+#define     VARADDR_PARAM_SYSTEM                    0x15A0
+#define     VARADDR_PARAM_ZOFFSET                   0x15B0
 
 // Tool
 #define     VARADDR_TOOL_ZOFFSET_BABYSTEPS          0x1600
@@ -148,10 +150,19 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 #define     VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL       0x0061
 #define     VARVAL_TOOL_FAN1_SWITCH                 0x0062
 
-#define     VARVAL_TOOL_BABYSTEP_UP_Z               0x0063
-#define     VARVAL_TOOL_BABYSTEP_DOWN_Z             0x0064
+#define     VARVAL_TOOL_LEFTMOVE_X                  0x0063
+#define     VARVAL_TOOL_RIGHTMOVE_X                 0x0064
+#define     VARVAL_TOOL_FORWARDMOVE_Y               0x0065
+#define     VARVAL_TOOL_BACKMOVE_Y                  0x0066
+#define     VARVAL_TOOL_UPMOVE_Z                    0x0067
+#define     VARVAL_TOOL_DOWNMOVE_Z                  0x0068
 
-#define     VARVAL_TOOL_FIRST_LAYER_CAL             0x0065
+#define     VARVAL_TOOL_BABYSTEP_UP_Z               0x0069
+#define     VARVAL_TOOL_BABYSTEP_DOWN_Z             0x006A
+
+#define     VARVAL_TOOL_BABYSTEP_Z_SAVE             0x006B
+
+#define     VARVAL_TOOL_CALIBRATE_Z                 0x006C
 
 // Print
 #define     VARADDR_PRINT                           0x1701  
@@ -179,9 +190,9 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 // Setting
 #define     VARADDR_SETTING                         0x1702  
 
-#define     VARVAL_SETTING_MOTOR_ENTER              0x0001  
-#define     VARVAL_SETTING_MOTOR_APPLY              0x0002  
-#define     VARVAL_SETTING_MOTOR_SAVE               0x0003  
+#define     VARVAL_SETTING_MOTOR_ENTER              0x0001
+#define     VARVAL_SETTING_MOTOR_APPLY              0x0002
+#define     VARVAL_SETTING_MOTOR_SAVE               0x0003
 #define     VARVAL_SETTING_LEVELING_ENTER           0x0004  
 #define     VARVAL_SETTING_LEVELING_APPLY           0x0005  
 #define     VARVAL_SETTING_LEVELING_SAVE            0x0006  
@@ -194,12 +205,16 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARVAL_SETTING_TMC2130_ENTER            0x000D  
 #define     VARVAL_SETTING_TMC2130_APPLY            0x000E  
 #define     VARVAL_SETTING_TMC2130_SAVE             0x000F  
+#define     VARVAL_SETTINGS_LOAD                    0x0020
 #define     VARVAL_SETTINGS_SAVE                    0x00C0  
 #define     VARVAL_SETTINGS_RESET                   0x00C1  
 #define     VARVAL_SETTINGS_RESETSAVE               0x00C2  
 #define     VARVAL_SETTINGS_SYSTEM                  0x00C3  
 #define     VARVAL_SETTINGS_SYSTEM_APPLY            0x00C4  
-#define     VARVAL_SETTINGS_SYSTEM_SAVE             0x00C5  
+#define     VARVAL_SETTINGS_SYSTEM_SAVE             0x00C5
+#define     VARVAL_SETTING_ZOFFSET_ENTER            0x00D1
+#define     VARVAL_SETTING_ZOFFSET_APPLY            0x00D2
+#define     VARVAL_SETTING_ZOFFSET_SAVE             0x00D3
 
 // Extruders
 #define     VARADDR_EXTRUDERS                       0x1703  
@@ -233,6 +248,14 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARVAL_FILAMENT_OPE_EXTRU2_PET          0x0009
 #define     VARVAL_FILAMENT_OPE_EXTRU2_FLEX         0x000A
 
+#define     VARADDR_LAYER1_PREHEAT                 0x1708
+#define     VARVAL_LAYER1_PREHEAT_EXTRU1           0x0001
+#define     VARVAL_LAYER1_PREHEAT_EXTRU2           0x0002
+#define     VARVAL_LAYER1_PREHEAT_EXTRU1_PLA       0x0003
+#define     VARVAL_LAYER1_PREHEAT_EXTRU1_ABS       0x0004
+#define     VARVAL_LAYER1_PREHEAT_EXTRU1_PET       0x0005
+#define     VARVAL_LAYER1_PREHEAT_EXTRU1_FLEX      0x0006
+
 
 #define     VARADDR_JUMP_PAGE                       0x1710  
 
@@ -243,6 +266,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARADDR_TUNE_PREHEAT_HOTEND2_SELECT     0x1715  
 #define     VARADDR_TUNE_PREHEAT_HOTEND2_TEMP       0x1716 
 #define     VARADDR_TUNE_PREHEAT_CUSTOM             0x1717
+#define     VARADDR_TUNE_PREHEAT_CUSTOM_BED         0x1718
 #define     VARADDR_TUNE_MOVE_E                     0x1720  
 #define     VARVAL_TUNE_FORWARD_E                   0X0001
 #define     VARVAL_TUNE_BACKWARD_E                  0X0002
@@ -266,41 +290,43 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     SERIAL_NUMBER                           "010-2323-4545"
 
 // Page number
-#define     PAGENUM_MAIN                            1
+#define     PAGENUM_MAIN                            1//69
 #define     PAGENUM_TEMP_PREHEAT                    10
 #define     PAGENUM_TEMP_PREHEAT_E1                 12
 #define     PAGENUM_TEMP_PREHEAT_E2                 14
 #define     PAGENUM_TEMP_PREHEAT_BED                16
 #define     PAGENUM_TEMP_PREHEAT_CUSTOM             18
-#define     PAGENUM_FILELIST                        71
-#define     PAGENUM_PRINT                           73
-#define     PAGENUM_PRINT_TUNE                      75
-#define     PAGENUM_PRINT_TUNE_FAN                  77
-#define     PAGENUM_FILE_INSERT_CARD                80
-#define     PAGENUM_POWER_LOSS_RECOVERY             100
-#define     PAGENUM_INFO_OPTION                     112 
-#define     PAGENUM_INFO_POPUP                      114
-#define     PAGENUM_INFO_WAITING                    116
+#define     PAGENUM_FILELIST                        3//71
+#define     PAGENUM_PRINTFILE_CONFIRM               5
+#define     PAGENUM_PRINT                           7
+#define     PAGENUM_PRINT_TUNE                      9
+#define     PAGENUM_PRINT_TUNE_FAN                  11
+#define     PAGENUM_FILE_INSERT_CARD                13
+#define     PAGENUM_POWER_LOSS_RECOVERY             17
+#define     PAGENUM_INFO_OPTION                     21
+#define     PAGENUM_INFO_POPUP                      23
+#define     PAGENUM_INFO_WAITING                    25
 #define     PAGENUM_AUTO_LEVELING_COMPLETE          0
 #define     PAGENUM_LEVELING_METHOD                 0
 #define     PAGENUM_TUNE_PID                        0
-#define     PAGENUM_PRINTFILE_CONFIRM               0
 #define     PAGENUM_ACCOMPLISH_PRINT                0
 #define     PAGENUM_MANUAL_LEVELING                 0
 #define     PAGENUM_POPUP_SHUTDOWN_WARNING          0
 #define     PAGENUM_TOOL_CALIBRATION                0
 #define     PAGENUM_TOOL_PAPERHEIGHT                0
-#define     PAGENUM_FILAMENT                        130
-#define     PAGENUM_FILAMENT_LOAD_1                 142
-#define     PAGENUM_FILAMENT_LOAD_2                 144
-#define     PAGENUM_FILAMENT_LOADING                148
-#define     PAGENUM_FILAMENT_UNLOAD_1               152
-#define     PAGENUM_FILAMENT_UNLOAD_2               154
-#define     PAGENUM_FILAMENT_UNLOADING              158
-#define     PAGENUM_FILAMENT_PURGE2                 160
-#define     PAGENUM_SETTING                         210
-#define     PAGENUM_SETTING_MOTOR                   212
-#define     PAGENUM_SETTING_TEMP_PARA               214
+#define     PAGENUM_UTILITY                         70
+#define     PAGENUM_FILAMENT                        70
+#define     PAGENUM_FILAMENT_LOAD_1                 72
+#define     PAGENUM_FILAMENT_LOAD_2                 0
+#define     PAGENUM_FILAMENT_LOADING                76
+#define     PAGENUM_FILAMENT_UNLOAD_1               78
+#define     PAGENUM_FILAMENT_UNLOAD_2               0
+#define     PAGENUM_FILAMENT_UNLOADING              82
+#define     PAGENUM_FILAMENT_PURGE2                 84
+#define     PAGENUM_FIRST_LAYER_PRINT               96
+#define     PAGENUM_SETTING                         120
+#define     PAGENUM_SETTING_MOTOR                   122
+#define     PAGENUM_SETTING_TEMP_PARA               126
 #define     PAGENUM_SETTING_EXTRUDERS_OFFSET        0
 #define     PAGENUM_SETTING_EXTRUDERS_MOTOR         0
 #define     PAGENUM_SETTING_EXTRUDERS_TEMP          0

@@ -39,7 +39,7 @@ uint8_t lcd_status_update_delay = 1, // First update one loop delayed
 typedef void(*generalVoidFun)();
 
 static uint8_t ftState = 0x00;
-#define FTSTATE_LCD_OLD_CARDSTATUS        0x01    // sdcard status
+#define FTSTATE_NEED_LOAD_PARAM           0x01    // need to load paras from eeprom
 #define FTSTATE_NEED_SAVE_PARAM           0x02    // need to save paras to eeprom
 #define FTSTATE_EXECUTE_PERIOD_TASK_NOW   0x04    // excute the lcd period task immediatelly
 #define FTSTATE_SERVO_STATUS              0x08    // servo status
@@ -50,25 +50,25 @@ static uint8_t ftState = 0x00;
 
 #define TEMPERTURE_PREHEAT_CHOISE_E1_PLA    0
 #define TEMPERTURE_PREHEAT_CHOISE_E1_ABS    1
-#define TEMPERTURE_PREHEAT_CHOISE_E1_PVA    2
+#define TEMPERTURE_PREHEAT_CHOISE_E1_PET    2
 #define TEMPERTURE_PREHEAT_CHOISE_E1_FLEX   3
-#define TEMPERTURE_PREHEAT_CHOISE_E1_PET    4
+#define TEMPERTURE_PREHEAT_CHOISE_E1_PVA    4
 #define TEMPERTURE_PREHEAT_CHOISE_E1_HIPS   5
 #define TEMPERTURE_PREHEAT_CHOISE_E1_PP     6
 #define TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM 7
 #define TEMPERTURE_PREHEAT_CHOISE_E2_PLA    8
 #define TEMPERTURE_PREHEAT_CHOISE_E2_ABS    9
-#define TEMPERTURE_PREHEAT_CHOISE_E2_PVA    10
+#define TEMPERTURE_PREHEAT_CHOISE_E2_PET    10
 #define TEMPERTURE_PREHEAT_CHOISE_E2_FLEX   11
-#define TEMPERTURE_PREHEAT_CHOISE_E2_PET    12
+#define TEMPERTURE_PREHEAT_CHOISE_E2_PVA    12
 #define TEMPERTURE_PREHEAT_CHOISE_E2_HIPS   13
 #define TEMPERTURE_PREHEAT_CHOISE_E2_PP     14
 #define TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM 15
 #define TEMPERTURE_PREHEAT_CHOISE_BED_PLA    16
 #define TEMPERTURE_PREHEAT_CHOISE_BED_ABS    17
-#define TEMPERTURE_PREHEAT_CHOISE_BED_PVA    18
+#define TEMPERTURE_PREHEAT_CHOISE_BED_PET    18
 #define TEMPERTURE_PREHEAT_CHOISE_BED_FLEX   19
-#define TEMPERTURE_PREHEAT_CHOISE_BED_PET    20
+#define TEMPERTURE_PREHEAT_CHOISE_BED_PVA    20
 #define TEMPERTURE_PREHEAT_CHOISE_BED_HIPS   21
 #define TEMPERTURE_PREHEAT_CHOISE_BED_PP     22
 #define TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM 23
@@ -105,7 +105,7 @@ int16_t lcd_preheat_fan_speed[FILAMENTS] = { PREHEAT_1_FAN_SPEED, \
 
 static uint8_t lcd_icon_state = 0;
 
-float movDis, movFeedrate;
+float move_dis, move_feedrate;
 generalVoidFun periodFun = nullptr;
 static touch_lcd myFysTLcd;
 
@@ -124,6 +124,10 @@ bool touch_lcd_aborting_print = false;
 
 #if ENABLED(FIRST_LAYER_CAL)
   static uint8_t first_layer_cal_step = 0;
+#endif
+
+#if ENABLED(TMC_Z_CALIBRATION)
+  static bool lcd_calibrating_z = 0;
 #endif
 
 static void sendParam_Tune();
@@ -152,6 +156,8 @@ static void sendParam_TMC2130();
 static void readParam_TMC2130();
 static void sendParam_system();
 static void readParam_system();
+static void sendParam_zoffset();
+static void readParam_zoffset();
 static void lcd_period_report(int16_t s);
 static void lcd_period_prompt_report();
 static void lcd_period_task(millis_t& tNow);
@@ -163,7 +169,7 @@ static void dwin_set_status(const char * msg);
 
 #if ENABLED(BABYSTEPPING)
   long babysteps_done = 0;
-  int16_t lcd_babysteps = 0;
+  int16_t lcd_babysteps = 20;
   #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
     static void lcd_babystep_zoffset();
   #else
@@ -198,14 +204,15 @@ void lcd_init() {
 }
 
 static void lcd_init_datas() {
-  movDis = 0.1;
-  movFeedrate = 30.0;
+  move_dis = 0.1;
+  move_feedrate = 30.0;
 
-  int16_t tval = movDis*FYSTLCD_DOT_TEN_MUL;
+  int16_t tval = move_dis*FYSTLCD_DOT_TEN_MUL;
   myFysTLcd.ftCmdStart(VARADDR_MOVE_DIS_SIGN);
   myFysTLcd.ftCmdPut16(tval);
   myFysTLcd.ftCmdSend();
-  tval = movFeedrate*FYSTLCD_DOT_TEN_MUL;
+
+  tval = move_feedrate*FYSTLCD_DOT_TEN_MUL;
   myFysTLcd.ftCmdStart(VARADDR_MOVE_SPEED_SIGN);
   myFysTLcd.ftCmdPut16(tval);
   myFysTLcd.ftCmdSend();
@@ -296,6 +303,9 @@ static void lcd_event() {
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
       lcd_setstatusPGM("PID autotune finished .", 1);
+      #if FYSTLCD_PAGE_EXIST(MAIN)
+        lcd_set_page(FTPAGE(MAIN));
+      #endif
       break;
     
     case LCDEVT_AUTOPID_FAIL:
@@ -303,6 +313,9 @@ static void lcd_event() {
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
       lcd_setstatusPGM("PID autotune fail .", 1);
+      #if FYSTLCD_PAGE_EXIST(MAIN)
+        lcd_set_page(FTPAGE(MAIN));
+      #endif
       break;
       
     case LCDEVT_DETAIL_EXTRUDER:
@@ -390,6 +403,7 @@ static void lcd_check() {
   #if ENABLED(POWER_LOSS_RECOVERY)
     if (job_recovery_commands_count && job_recovery_phase == JOB_RECOVERY_IDLE) {
       //lcd_goto_screen(lcd_job_recovery_menu);
+      SERIAL_ECHOLN("lcd_job_recovery");
       job_recovery_phase = JOB_RECOVERY_MAYBE; // Waiting for a response
       lcd_set_event(LCDEVT_IF_CONTINE_PRINT);
     }
@@ -450,7 +464,7 @@ static void lcd_task_first_layer_cal() {
         first_layer_cal_step = 11;
         break;
       case 11:
-        if(lay1cal_preheat())
+        if(lay1cal_preheat_f(filament))
           first_layer_cal_step = 10;
         break;
       case 10:
@@ -462,6 +476,9 @@ static void lcd_task_first_layer_cal() {
         //menu_depth = 0;
         //menu_submenu(lcd_babystep_z);
         // popup zoffset menu
+        #if FYSTLCD_PAGE_EXIST(FIRST_LAYER_PRINT)
+          lcd_set_page(FTPAGE(FIRST_LAYER_PRINT));
+        #endif
         lay1cal_intro_line();
         first_layer_cal_step = 8;
         break;
@@ -490,6 +507,9 @@ static void lcd_task_first_layer_cal() {
         //if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1) {
         //  lcd_wizard(WizState::RepeatLay1Cal);
         //}
+        #if FYSTLCD_PAGE_EXIST(UTILITY)
+          lcd_set_page(FTPAGE(UTILITY));
+        #endif
         break;
       }
 	  }
@@ -498,11 +518,28 @@ static void lcd_task_first_layer_cal() {
 
 #endif
 
+#if ENABLED(TMC_Z_CALIBRATION)
+void lcd_flag_calibrate_z_done() {
+  if(lcd_calibrating_z) {
+    lcd_calibrating_z = false;
+    #if FYSTLCD_PAGE_EXIST(UTILITY)
+      lcd_set_page(FTPAGE(UTILITY));
+    #endif
+  }
+}
+#endif
+
 static void lcd_task() {
   if ((ftState&FTSTATE_NEED_SAVE_PARAM) \
       && (commands_in_queue < BUFSIZE)) {
     enqueue_and_echo_commands_P(PSTR("M500"));
     ftState &= ~FTSTATE_NEED_SAVE_PARAM;
+  }
+
+  if ((ftState&FTSTATE_NEED_LOAD_PARAM) \
+      && (commands_in_queue < BUFSIZE)) {
+    enqueue_and_echo_commands_P(PSTR("M501"));
+    ftState &= ~FTSTATE_NEED_LOAD_PARAM;
   }
 
   #if ENABLED(FIRST_LAYER_CAL)
@@ -565,7 +602,16 @@ static void lcd_period_task(millis_t& tNow)  {
   #endif
 }
 
-static void lcd_save() {
+static void lcd_load_settings() {
+  if (commands_in_queue < BUFSIZE) {
+    enqueue_and_echo_commands_P(PSTR("M501"));
+    ftState &= ~FTSTATE_NEED_LOAD_PARAM;
+  }
+  else
+    ftState |= FTSTATE_NEED_LOAD_PARAM;
+}
+
+static void lcd_save_settings() {
   if (commands_in_queue < BUFSIZE) {
     enqueue_and_echo_commands_P(PSTR("M500"));
     ftState &= ~FTSTATE_NEED_SAVE_PARAM;
@@ -640,7 +686,7 @@ static void moveAxis(AxisEnum axis, float val) {
         // Get the new position
         current_position[axis] += val;
 
-        movFeedrate = MOVE_E_FEEDRATE;
+        move_feedrate = MOVE_E_FEEDRATE;
       }
       else {
         return;
@@ -670,10 +716,10 @@ static void moveAxis(AxisEnum axis, float val) {
       NOLESS(current_position[axis], min);
       NOMORE(current_position[axis], max);
       
-      movFeedrate = MOVE_XYZ_FEEDRATE;
+      move_feedrate = MOVE_XYZ_FEEDRATE;
     }
 
-    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], movFeedrate>0.0 ? movFeedrate : pgm_read_float(&homing_feedrate_mm_s[axis]), active_extruder);
+    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], move_feedrate>0.0 ? move_feedrate : pgm_read_float(&homing_feedrate_mm_s[axis]), active_extruder);
 }
 
 static void manualLevelingMove(float x, float y) {
@@ -907,7 +953,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       break;
     case VARADDR_TOOL_TUNEPID_SAVE:
       readActiveExtrudersParam();
-      lcd_save();
+      lcd_save_settings();
       break;
     case VARVAL_TOOL_HOME_ALL:
       enqueue_and_echo_commands_P(PSTR("G28"));
@@ -992,36 +1038,50 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     case VARVAL_TOOL_PREHEAT_PLA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PLA;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_ABS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_ABS;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_PVA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PVA;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PVA;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_FLEX:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_FLEX;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_PET:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PET;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_HIPS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_HIPS;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_HIPS;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_PP:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PP;
       filament_temp_preheat();
+      filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PP;
+      filament_temp_preheat(true);
       sendActiveExtrudersParam();
       break;
     case VARVAL_TOOL_PREHEAT_CUSTOM:
@@ -1116,71 +1176,46 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       break;
 
     case VARVAL_TOOL_PREHEAT_CUSTOM_APPLY:
-      // get the temperture
-      myFysTLcd.ftCmdStart(VARADDR_TUNE_PREHEAT_CUSTOM);
-      if (myFysTLcd.ftCmdReceive(2)) {        
-        switch(filament_choice) { 
-          case TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM: 
-          case TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM:
-            myFysTLcd.ftCmdGetI16(lcd_preheat_hotend_temp[FILAMENTS-1]); 
-            filament_temp_preheat();
-            break;
-
-          case TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM:
-            myFysTLcd.ftCmdGetI16(lcd_preheat_bed_temp[FILAMENTS-1]); 
-            filament_temp_preheat(true);
-            break;
-        }       
-        SERIAL_ECHOLNPAIR("filament_choice", filament_choice);
-        SERIAL_ECHOLNPAIR("lcd_preheat_bed_temp", lcd_preheat_bed_temp[FILAMENTS-1]);
-      }
       
-      sendActiveExtrudersParam();
-
-      #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT)
-        lcd_set_page(FTPAGE(TEMP_PREHEAT));
-      #endif  
       break;
 
     case VARVAL_TOOL_PREHEAT_CUSTOM_CANCEL:
-      switch(filament_choice) { 
-          case TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM: 
-            #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_E1)
-              lcd_set_page(FTPAGE(TEMP_PREHEAT_E1));
-            #endif      
-            break;
-          case TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM:
-            #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_E2)
-              lcd_set_page(FTPAGE(TEMP_PREHEAT_E2));
-            #endif 
-            break;
-
-          case TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM:
-            #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_BED)
-              lcd_set_page(FTPAGE(TEMP_PREHEAT_BED));
-            #endif 
-            break;
-        }       
+      thermalManager.setTargetHotend(0, 0);
+      #if HAS_HEATED_BED
+        thermalManager.setTargetBed(0);
+      #endif
       break;
 
     #if ENABLED(BABYSTEPPING)
       #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
         case VARVAL_TOOL_BABYSTEP_UP_Z:
+          lcd_babysteps = 20;
           lcd_babystep_zoffset();
-        break;
+          break;
         case VARVAL_TOOL_BABYSTEP_DOWN_Z:
-          lcd_babysteps = -lcd_babysteps;
+          lcd_babysteps = -20;
           lcd_babystep_zoffset();
-        break;
+          break;
+        case VARVAL_TOOL_BABYSTEP_Z_SAVE:
+          lcd_save_settings();
+          first_layer_cal_step = 2;
+          lay1cal_init();
+          #if FYSTLCD_PAGE_EXIST(MAIN)
+            lcd_set_page(FTPAGE(MAIN));
+          #endif
+          break;
       #endif
     #endif
 
-    #if ENABLED(FIRST_LAYER_CAL)
-    case VARVAL_TOOL_FIRST_LAYER_CAL:
-      first_layer_cal_step = 0;
-      ftState |= FTSTATE_FIRST_LAYER_CAL;
+    case VARVAL_TOOL_CALIBRATE_Z:
+      //
+      // TMC Z Calibration
+      //
+      #if ENABLED(TMC_Z_CALIBRATION)
+        lcd_calibrating_z = true;
+        enqueue_and_echo_commands_P(PSTR("G28\nM915"));
+      #endif
       break;
-    #endif
       
     case VARVAL_TOOL_M999:
       Running = true;
@@ -1374,6 +1409,24 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       break;
     case VARVAL_TOOL_RIGHTMOVE_E_10:
       moveAxis(E_AXIS, 10);
+      break;
+    case VARVAL_TOOL_LEFTMOVE_X:
+      moveAxis(X_AXIS, -move_dis);
+      break;
+    case VARVAL_TOOL_RIGHTMOVE_X:
+      moveAxis(X_AXIS, move_dis);
+      break;
+    case VARVAL_TOOL_FORWARDMOVE_Y:
+      moveAxis(Y_AXIS, -move_dis);
+      break;
+    case VARVAL_TOOL_BACKMOVE_Y:
+      moveAxis(Y_AXIS, move_dis);
+      break;
+    case VARVAL_TOOL_UPMOVE_Z:
+      moveAxis(Z_AXIS, move_dis);
+      break;
+    case VARVAL_TOOL_DOWNMOVE_Z:
+      moveAxis(Z_AXIS, -move_dis);
       break;
     case VARVAL_TOOL_ENTER_PAPER_HEIGHT:
       #if FYSTLCD_PAGE_EXIST(TOOL_PAPERHEIGHT)
@@ -1763,7 +1816,13 @@ static void dwin_on_cmd_print(uint16_t tval)
               			}
               			else {              			  
               			  SERIAL_ECHOLNPAIR("file select:", card.filename);
-                      #ifndef FILE_PRINT_NEED_CONRIRM
+                      #if defined(FILE_PRINT_NEED_CONRIRM)
+
+                        #if FYSTLCD_PAGE_EXIST(PRINTFILE_CONFIRM)
+                         lcd_set_page(FTPAGE(PRINTFILE_CONFIRM));
+                        #endif
+
+                      #elif FYSTLCD_PAGE_EXIST(PRINT)
                         lcd_set_page(FTPAGE(PRINT));
                       #endif
 
@@ -1879,7 +1938,7 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         #if HOTENDS > 1
           readParam_ExtrudersMotor();
         #endif
-        lcd_save();
+        lcd_save_settings();
         #if FYSTLCD_PAGE_EXIST(SETTING)
           lcd_set_page(FTPAGE(SETTING));
         #endif
@@ -1898,7 +1957,7 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         break;
     case VARVAL_SETTING_LEVELING_SAVE:
         readParam_Leveling();
-        lcd_save();
+        lcd_save_settings();
         break;
     case VARVAL_SETTING_TEMP_PARA_ENTER:
         sendParam_Temp();
@@ -1923,7 +1982,7 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         #if HOTENDS > 1
           readParam_ExtrudersTemp();
         #endif
-        lcd_save();
+        lcd_save_settings();
         #if FYSTLCD_PAGE_EXIST(SETTING)
           lcd_set_page(FTPAGE(SETTING));
         #endif
@@ -1939,7 +1998,7 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         break;
     case VARVAL_SETTING_MATERIAL_SAVE:
         readParam_Material();
-        lcd_save();
+        lcd_save_settings();
         break;
     case VARVAL_SETTING_TMC2130_ENTER:
         sendParam_TMC2130();
@@ -1952,17 +2011,20 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         break;
     case VARVAL_SETTING_TMC2130_SAVE:
         readParam_TMC2130();
-        lcd_save();
+        lcd_save_settings();
         break;
     case VARVAL_SETTINGS_SAVE:
-        lcd_save();
+        lcd_save_settings();
         break;
     case VARVAL_SETTINGS_RESET:
         settings.reset();
         break;
     case VARVAL_SETTINGS_RESETSAVE:
         settings.reset();
-        lcd_save();
+        lcd_save_settings();
+        break;
+    case VARVAL_SETTINGS_LOAD:
+        lcd_load_settings();
         break;
     case VARVAL_SETTINGS_SYSTEM:
         sendParam_system();
@@ -1975,7 +2037,20 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         break;
     case VARVAL_SETTINGS_SYSTEM_SAVE:
         readParam_system();
-        lcd_save();
+        lcd_save_settings();
+        break;
+    case VARVAL_SETTING_ZOFFSET_ENTER:
+        sendParam_zoffset();
+        #if FYSTLCD_PAGE_EXIST(SETTING_ZOFFSET)
+          lcd_set_page(FTPAGE(SETTING_ZOFFSET));
+        #endif
+        break;
+    case VARVAL_SETTING_ZOFFSET_APPLY:
+        readParam_zoffset();
+        break;
+    case VARVAL_SETTING_ZOFFSET_SAVE:
+        readParam_zoffset();
+        lcd_save_settings();
         break;
   }
 }
@@ -2028,7 +2103,7 @@ static void dwin_on_cmd(millis_t& tNow) {
           break;
         case VARVAL_EXTRUDERS_OFFSET_SAVE:
           readParam_ExtrudersOffset();
-          lcd_save();
+          lcd_save_settings();
           break;
         case VARVAL_EXTRUDERS_MOTOR_ENTER:
           sendParam_ExtrudersMotor();
@@ -2041,7 +2116,7 @@ static void dwin_on_cmd(millis_t& tNow) {
           break;
         case VARVAL_EXTRUDERS_MOTOR_SAVE:
           readParam_ExtrudersMotor();
-          lcd_save();
+          lcd_save_settings();
           break;
         case VARVAL_EXTRUDERS_TEMP_ENTER:
           sendParam_ExtrudersTemp();
@@ -2057,7 +2132,7 @@ static void dwin_on_cmd(millis_t& tNow) {
           break;
         case VARVAL_EXTRUDERS_TEMP_SAVE:
           readParam_ExtrudersTemp();
-          lcd_save();
+          lcd_save_settings();
           #if FYSTLCD_PAGE_EXIST(SETTING)
             lcd_set_page(FTPAGE(SETTING));
           #endif
@@ -2177,30 +2252,58 @@ static void dwin_on_cmd(millis_t& tNow) {
       #endif   
     }      
     break;
-    
+
+  case VARADDR_LAYER1_PREHEAT:
+    if(tval > VARVAL_LAYER1_PREHEAT_EXTRU2) {
+      enqueue_and_echo_commands_now_P(PSTR("G28 XY"));
+    }
+    switch (tval) {
+      case VARVAL_LAYER1_PREHEAT_EXTRU1_PLA:
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
+        first_layer_cal_step = 20;
+        ftState |= FTSTATE_FIRST_LAYER_CAL;
+        break;
+      case VARVAL_LAYER1_PREHEAT_EXTRU1_ABS:
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
+        first_layer_cal_step = 21;
+        ftState |= FTSTATE_FIRST_LAYER_CAL;
+        break;
+      case VARVAL_LAYER1_PREHEAT_EXTRU1_PET:
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
+        first_layer_cal_step = 22;
+        ftState |= FTSTATE_FIRST_LAYER_CAL;
+        break;
+      case VARVAL_LAYER1_PREHEAT_EXTRU1_FLEX:
+        filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
+        first_layer_cal_step = 23;
+        ftState |= FTSTATE_FIRST_LAYER_CAL;
+        break;
+    }
+    break;
+
   case VARADDR_MOVE_DIS:
-      movDis = tval;
-      movDis /= FYSTLCD_DOT_TEN_MUL;
+      move_dis = tval;
+      move_dis /= FYSTLCD_DOT_TEN_MUL;
       myFysTLcd.ftCmdStart(VARADDR_MOVE_DIS_SIGN);
       myFysTLcd.ftCmdPut16(tval);
       myFysTLcd.ftCmdSend();
       break;
-      
+
   case VARADDR_MOVE_SPEED:
-      movFeedrate = tval;
-      movFeedrate /= FYSTLCD_DOT_TEN_MUL;
+      move_feedrate = tval;
+      move_feedrate /= FYSTLCD_DOT_TEN_MUL;
       myFysTLcd.ftCmdStart(VARADDR_MOVE_SPEED_SIGN);
       myFysTLcd.ftCmdPut16(tval);
       myFysTLcd.ftCmdSend();
       break;
-      
+
   case VARADDR_JUMP_PAGE:
       retPageId = tval; 
       currentPageId = tval;
       //SERIAL_ECHOPGM("Page to");
       //MYSERIAL0.println((int)tval);
       break;
-      
+
   case VARADDR_TUNE_PRINT_PERCENTAGE:
       oldFeedratePercentage = tval;
       feedrate_percentage = tval;
@@ -2210,6 +2313,27 @@ static void dwin_on_cmd(millis_t& tNow) {
       oldFanSpeed=tval;
       fanSpeeds[active_extruder] = tval;
     #endif
+    break;
+  case VARADDR_TUNE_PREHEAT_CUSTOM:
+    myFysTLcd.ftCmdStart(VARADDR_TUNE_PREHEAT_CUSTOM);
+    if (myFysTLcd.ftCmdReceive(2)) {
+      switch(filament_choice) {
+        case TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM:
+        case TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM:
+          myFysTLcd.ftCmdGetI16(lcd_preheat_hotend_temp[FILAMENTS-1]);
+          filament_temp_preheat();
+          break;
+
+        case TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM:
+          myFysTLcd.ftCmdGetI16(lcd_preheat_bed_temp[FILAMENTS-1]);
+          filament_temp_preheat(true);
+          break;
+      }
+      SERIAL_ECHOLNPAIR("filament_choice", filament_choice);
+      SERIAL_ECHOLNPAIR("lcd_preheat_bed_temp", lcd_preheat_bed_temp[FILAMENTS-1]);
+    }
+
+    sendActiveExtrudersParam();
     break;
   case VARADDR_TUNE_PREHEAT_HOTEND_TEMP:
     thermalManager.setTargetHotend(tval, 0);
@@ -2549,16 +2673,12 @@ static void sendParam_Tune(){
   #endif
 
   // VARADDR_PARAM_TUNE + 0x06
-  // move to sendParam_Tune_fan
-  //#if FAN_COUNT > 0
-  //  for(e=0;e<FAN_COUNT;e++)
-  //  {
-  //      myFysTLcd.ftCmdPut16(fanSpeeds[e]);
-  //  }
-  //  for (; e<5; e++)myFysTLcd.ftCmdJump(2);
-  //#else
+  #if FAN_COUNT > 0
+    for(e=0; e<FAN_COUNT; e++) myFysTLcd.ftCmdPut16(fanSpeeds[e]);
+    for (; e<5; e++) myFysTLcd.ftCmdJump(2);
+  #else
     myFysTLcd.ftCmdJump(10);
-  //#endif
+  #endif
 
   // VARADDR_PARAM_TUNE + 0x0b
   myFysTLcd.ftCmdPut16(feedrate_percentage);
@@ -3009,50 +3129,60 @@ static void readParam_ExtrudersTemp()
 }
 #endif
 
-static void sendParam_Leveling()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
-    // Global Leveling
-#if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
+static void sendParam_Leveling() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
+  // Global Leveling
+  #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
     myFysTLcd.ftCmdPutF32(planner.z_fade_height);
-#elif ABL_PLANAR // geo-f : add
-        myFysTLcd.ftCmdPutF32(zprobe_zoffset); // geo-f : add
-#else
+  #else
     myFysTLcd.ftCmdJump(4);
-#endif
+  #endif
 
-    myFysTLcd.ftCmdSend();
-// Planar Bed Leveling matrix
-#if ABL_PLANAR
-    for (char i = 0; i < 9; i++)
-    {
-        myFysTLcd.ftCmdPutF32(planner.bed_level_matrix.matrix[i]);
+  // Planar Bed Leveling matrix
+  #if ABL_PLANAR
+    for (char i = 0; i < 9; i++) {
+      myFysTLcd.ftCmdPutF32(planner.bed_level_matrix.matrix[i]);
     }
-#else
+  #else
     myFysTLcd.ftCmdJump(36);
-#endif
-    myFysTLcd.ftCmdSend();
+  #endif
+
+  myFysTLcd.ftCmdSend();
 }
-static void readParam_Leveling()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
-    if (myFysTLcd.ftCmdReceive(4))
-    {
-        // Global Leveling
-#if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-        myFysTLcd.ftCmdGetF32(planner.z_fade_height);
-#endif
-    }
-    if (myFysTLcd.ftCmdReceive(36))
-    {
-        // Planar Bed Leveling matrix
-#if ABL_PLANAR
-        for (char i = 0; i < 9; i++)
-        {
-            myFysTLcd.ftCmdGetF32(planner.bed_level_matrix.matrix[i]);
-        }
-#endif
-    }
+
+static void readParam_Leveling() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
+  if (myFysTLcd.ftCmdReceive(4)) {
+    // Global Leveling
+    #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
+      myFysTLcd.ftCmdGetF32(planner.z_fade_height);
+    #endif
+  }
+  if (myFysTLcd.ftCmdReceive(36)) {
+    // Planar Bed Leveling matrix
+    #if ABL_PLANAR
+      for (char i = 0; i < 9; i++) {
+        myFysTLcd.ftCmdGetF32(planner.bed_level_matrix.matrix[i]);
+      }
+    #endif
+  }
+}
+
+static void sendParam_zoffset() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
+  #if HAS_BED_PROBE
+    myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
+  #endif
+  myFysTLcd.ftCmdSend();
+}
+
+static void readParam_zoffset() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
+  if (myFysTLcd.ftCmdReceive(2)) {
+    #if HAS_BED_PROBE
+      myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
+    #endif
+  }
 }
 
 static void sendParam_Temp() {
@@ -3365,6 +3495,7 @@ static void sendParam_system()
 #else
     myFysTLcd.ftCmdJump(2);
 #endif
+
 #if PIN_EXISTS(PS_ON)&&defined(FYS_ACTIVE_TIME_OVER)
     int16_t t=max_inactive_time/1000UL;
     myFysTLcd.ftCmdPut16(t);
