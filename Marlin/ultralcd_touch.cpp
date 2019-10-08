@@ -1007,10 +1007,10 @@ static void dwin_on_cmd_tool(uint16_t tval) {
 
     case VARVAL_TOOL_PREHEAT_SWITHCH_BED:
       if(thermalManager.degTargetBed() > 0) {
-        thermalManager.setTargetBed(PREHEAT_1_TEMP_BED);
+        thermalManager.setTargetBed(0);
       }
       else {
-        thermalManager.setTargetBed(0);
+        thermalManager.setTargetBed(PREHEAT_1_TEMP_BED);
       }
       break;
       
