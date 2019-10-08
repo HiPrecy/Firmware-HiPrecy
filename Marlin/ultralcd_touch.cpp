@@ -523,7 +523,7 @@ void lcd_flag_calibrate_z_done() {
   if(lcd_calibrating_z) {
     lcd_calibrating_z = false;
     #if FYSTLCD_PAGE_EXIST(UTILITY)
-      lcd_set_page(FTPAGE(UTILITY));
+      lcd_set_page_force(FTPAGE(UTILITY));
     #endif
   }
 }
