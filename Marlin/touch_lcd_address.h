@@ -292,11 +292,11 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 
 // Page number
 #define     PAGENUM_MAIN                            1//69
-#define     PAGENUM_TEMP_PREHEAT                    10
-#define     PAGENUM_TEMP_PREHEAT_E1                 12
-#define     PAGENUM_TEMP_PREHEAT_E2                 14
-#define     PAGENUM_TEMP_PREHEAT_BED                16
-#define     PAGENUM_TEMP_PREHEAT_CUSTOM             18
+#define     PAGENUM_TEMP_PREHEAT                    0
+#define     PAGENUM_TEMP_PREHEAT_E1                 0
+#define     PAGENUM_TEMP_PREHEAT_E2                 0
+#define     PAGENUM_TEMP_PREHEAT_BED                0
+#define     PAGENUM_TEMP_PREHEAT_CUSTOM             48
 #define     PAGENUM_FILELIST                        3//71
 #define     PAGENUM_PRINTFILE_CONFIRM               5
 #define     PAGENUM_PRINT                           7
