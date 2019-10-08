@@ -941,7 +941,7 @@ void CardReader::printingHasFinished() {
 
 #if ENABLED(POWER_LOSS_RECOVERY)
 
-  char job_recovery_file_name[4] = "bin";
+  constexpr char job_recovery_file_name[5] = "/PLR";
 
   void CardReader::openJobRecoveryFile(const bool read) {
     if (!cardOK) return;
