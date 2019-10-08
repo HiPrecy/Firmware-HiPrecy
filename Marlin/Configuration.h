@@ -1261,7 +1261,7 @@
 #define PREHEAT_2_TEMP_BED     80
 #define PREHEAT_2_FAN_SPEED     0 // Value from 0 to 255
 
-#define PREHEAT_3_TEMP_HOTEND 230 // PVA
+#define PREHEAT_3_TEMP_HOTEND 240 // PET
 #define PREHEAT_3_TEMP_BED     70
 #define PREHEAT_3_FAN_SPEED     0  
 
@@ -1269,7 +1269,7 @@
 #define PREHEAT_4_TEMP_BED     50
 #define PREHEAT_4_FAN_SPEED     0 
 
-#define PREHEAT_5_TEMP_HOTEND 240 // PET
+#define PREHEAT_5_TEMP_HOTEND 230 // PVA
 #define PREHEAT_5_TEMP_BED     70
 #define PREHEAT_5_FAN_SPEED     0 
 
@@ -1950,5 +1950,7 @@
 
 // Only power servos during movement, otherwise leave off to prevent jitter
 //#define DEACTIVATE_SERVOS_AFTER_MOVE
+
+#define FIRST_LAYER_CAL
 
 #endif // CONFIGURATION_H
