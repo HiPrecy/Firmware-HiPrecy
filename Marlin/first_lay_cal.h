@@ -7,7 +7,9 @@
 
 #include <stdint.h>
 
+void lay1cal_init();
 bool lay1cal_preheat();
+bool lay1cal_preheat_f(uint8_t filament);
 void lay1cal_load_filament(char *cmd_buffer, uint8_t filament);
 void lay1cal_intro_line();
 bool lay1cal_before_meander();

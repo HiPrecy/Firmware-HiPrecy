@@ -10,7 +10,15 @@
 
 #ifdef FIRST_LAYER_CAL
 
+static uint8_t i = 0;
+static uint8_t j = 0;
+
 extern uint8_t commands_in_queue;
+
+void lay1cal_init() {
+  i = 0;
+  j = 0;
+}
 
 int8_t enqueue_layre1cal_commands_P(const char * const pgcode) {
   if(commands_in_queue < BUFSIZE) {
@@ -22,10 +30,63 @@ int8_t enqueue_layre1cal_commands_P(const char * const pgcode) {
   }
 }
 
+//! @brief Preheat
+bool lay1cal_preheat_f(uint8_t filament) {
+  if(filament >3) return;
+
+  SERIAL_ECHOLNPAIR("f:",filament);
+//  static uint8_t i = 0;
+
+  static const char cmd_preheat_0[] PROGMEM = "M107";
+  
+  static const char cmd_preheat_1[] PROGMEM = "M104 S" STRINGIFY(PREHEAT_1_TEMP_HOTEND);
+  static const char cmd_preheat_2[] PROGMEM = "M140 S" STRINGIFY(PREHEAT_1_TEMP_BED);
+  static const char cmd_preheat_3[] PROGMEM = "M190 S" STRINGIFY(PREHEAT_1_TEMP_BED);
+  static const char cmd_preheat_4[] PROGMEM = "M109 S" STRINGIFY(PREHEAT_1_TEMP_HOTEND);
+  
+  static const char cmd_preheat_5[] PROGMEM = "M104 S" STRINGIFY(PREHEAT_2_TEMP_HOTEND);
+  static const char cmd_preheat_6[] PROGMEM = "M140 S" STRINGIFY(PREHEAT_2_TEMP_BED);
+  static const char cmd_preheat_7[] PROGMEM = "M190 S" STRINGIFY(PREHEAT_2_TEMP_BED);
+  static const char cmd_preheat_8[] PROGMEM = "M109 S" STRINGIFY(PREHEAT_2_TEMP_HOTEND);
+  
+  static const char cmd_preheat_9[] PROGMEM = "M104 S" STRINGIFY(PREHEAT_3_TEMP_HOTEND);
+  static const char cmd_preheat_10[] PROGMEM = "M140 S" STRINGIFY(PREHEAT_3_TEMP_BED);
+  static const char cmd_preheat_11[] PROGMEM = "M190 S" STRINGIFY(PREHEAT_3_TEMP_BED);
+  static const char cmd_preheat_12[] PROGMEM = "M109 S" STRINGIFY(PREHEAT_3_TEMP_HOTEND);
+  
+  static const char cmd_preheat_13[] PROGMEM = "M104 S" STRINGIFY(PREHEAT_4_TEMP_HOTEND);
+  static const char cmd_preheat_14[] PROGMEM = "M140 S" STRINGIFY(PREHEAT_4_TEMP_BED);
+  static const char cmd_preheat_15[] PROGMEM = "M190 S" STRINGIFY(PREHEAT_4_TEMP_BED);
+  static const char cmd_preheat_16[] PROGMEM = "M109 S" STRINGIFY(PREHEAT_4_TEMP_HOTEND);
+
+  static const char cmd_preheat_17[] PROGMEM = "G28";
+  static const char cmd_preheat_18[] PROGMEM = "G92 E0.0";
+
+  static const char * const preheat_cmd[][7] PROGMEM = {
+    { cmd_preheat_0, cmd_preheat_1, cmd_preheat_2, cmd_preheat_3, cmd_preheat_4, cmd_preheat_17, cmd_preheat_18 },
+    { cmd_preheat_0, cmd_preheat_5, cmd_preheat_6, cmd_preheat_7, cmd_preheat_8, cmd_preheat_17, cmd_preheat_18 },
+    { cmd_preheat_0, cmd_preheat_9, cmd_preheat_10, cmd_preheat_11, cmd_preheat_12, cmd_preheat_17, cmd_preheat_18 },
+    { cmd_preheat_0, cmd_preheat_13, cmd_preheat_14, cmd_preheat_15, cmd_preheat_16, cmd_preheat_17, cmd_preheat_18 }
+  };
+
+  for (; i < 7; ++i) {
+    if (5 == i) { 
+      if(0 > enqueue_layre1cal_commands_P(PSTR("M117 First layer cal."))) {
+        return false;
+      }
+    }
+    if(0 > enqueue_layre1cal_commands_P(static_cast<char*>(pgm_read_ptr(&preheat_cmd[filament][i])))) {
+      return false;
+    }
+  }
+
+  i = 0;
+  return true;
+}
 
 //! @brief Preheat
 bool lay1cal_preheat() {
-  static uint8_t i = 0;
+  //static uint8_t i = 0;
 
   static const char cmd_preheat_0[] PROGMEM = "M107";
   static const char cmd_preheat_1[] PROGMEM = "M104 S" STRINGIFY(PREHEAT_1_TEMP_HOTEND);
@@ -65,7 +126,7 @@ bool lay1cal_preheat() {
 //! @param filament filament to use (applies for MMU only)
 void lay1cal_load_filament(char *cmd_buffer, uint8_t filament)
 {
-  static uint8_t i = 0;
+  //static uint8_t i = 0;
 /*
   if (mmu_enabled)
   {
@@ -82,7 +143,7 @@ void lay1cal_load_filament(char *cmd_buffer, uint8_t filament)
 //! @brief Print intro line
 void lay1cal_intro_line()
 {
-  static uint8_t i = 0;
+  //static uint8_t i = 0;
   /*
   static const char cmd_intro_mmu_3[] PROGMEM = "G1 X55.0 E32.0 F1073.0";
   static const char cmd_intro_mmu_4[] PROGMEM = "G1 X5.0 E32.0 F1800.0";
@@ -127,7 +188,6 @@ void lay1cal_intro_line()
 
 //! @brief Setup for printing meander
 bool lay1cal_before_meander() {
-  static uint8_t i = 0;
   
   static const char cmd_pre_meander_0[] PROGMEM = "G92 E0.0";
   static const char cmd_pre_meander_1[] PROGMEM = "G21"; //set units to millimeters TODO unsupported command
@@ -178,7 +238,7 @@ static const float extr = count_e(height, width, length); //!< E axis movement n
 //! @brief Print meander
 //! @param cmd_buffer character buffer needed to format gcodes
 bool lay1cal_meander(char *cmd_buffer) {
-  static uint8_t i = 0;
+  //static uint8_t i = 0;
   char str_1[16];
 
   static const char cmd_meander_0[] PROGMEM = "G1 X50 Y155";
@@ -239,8 +299,8 @@ bool lay1cal_meander(char *cmd_buffer) {
 //!
 //! @param cmd_buffer character buffer needed to format gcodes
 //! @param i iteration
-bool lay1cal_square(char *cmd_buffer, uint8_t i) {
-  static uint8_t index = 0;
+bool lay1cal_square(char *cmd_buffer, uint8_t ind) {
+  //static uint8_t j = 0;
   char str_1[16], str_e[16],str_es[16];;
 
   const float extr_short_segment = count_e(height, width, width);
@@ -251,48 +311,48 @@ bool lay1cal_square(char *cmd_buffer, uint8_t i) {
   dtostrf(extr, 2, 3, str_e);
   dtostrf(extr_short_segment, 2, 3, str_es);
   
-  if(index == 0) {
-    dtostrf((35 - i*width * 2), 2, 2, str_1);
+  if(j == 0) {
+    dtostrf((35 - ind*width * 2), 2, 2, str_1);
     sprintf_P(cmd_buffer, fmt1, 70, str_1, str_e);
     if(!enqueue_and_echo_command(cmd_buffer)) {
       return false;
     }
-    index++;
+    j++;
   }
 
-  if(index == 1) {
-    dtostrf((35 - (2 * i + 1)*width), 2, 2, str_1);
+  if(j == 1) {
+    dtostrf((35 - (2 * ind + 1)*width), 2, 2, str_1);
     sprintf_P(cmd_buffer, fmt2, str_1, str_es);
     if(!enqueue_and_echo_command(cmd_buffer)) {
       return false;
     }
-    index++;
+    j++;
   }
 
-  if(index == 2) {
-    dtostrf((35 - (2 * i + 1)*width), 2, 2, str_1);
+  if(j == 2) {
+    dtostrf((35 - (2 * ind + 1)*width), 2, 2, str_1);
     sprintf_P(cmd_buffer, fmt1, 50, str_1, str_e);
     if(!enqueue_and_echo_command(cmd_buffer)) {
       return false;
     }
-    index++;
+    j++;
   }
 
-  if(index == 3) {
-    dtostrf((35 - (i + 1)*width * 2), 2, 2, str_1);
+  if(j == 3) {
+    dtostrf((35 - (ind + 1)*width * 2), 2, 2, str_1);
     sprintf_P(cmd_buffer, fmt2, str_1, str_es);
     if(!enqueue_and_echo_command(cmd_buffer)) {
       return false;
     }
-    index++;
+    j++;
   }
 
-  index = 0;
+  j = 0;
   return true;
 }
 
 bool lay1cal_square_loop(char *cmd_buffer, uint8_t i1, uint8_t i2) {
-  static uint8_t i = i1;
+  //static uint8_t i = i1;
   for (; i < i2; i++) {
     if(!lay1cal_square(cmd_buffer, i)) {
       return false;
@@ -304,7 +364,7 @@ bool lay1cal_square_loop(char *cmd_buffer, uint8_t i1, uint8_t i2) {
 }
 
 bool lay1cal_end() {
-  static uint8_t i = 0;
+  //static uint8_t i = 0;
 
   static const char cmd_end_0[] PROGMEM = "M107";
   static const char cmd_end_1[] PROGMEM = "G1 E-0.07500 F2100.00000";
@@ -338,6 +398,7 @@ bool lay1cal_end() {
   }
 
   i = 0;
+  j = 0;
   return true;
 }
 
