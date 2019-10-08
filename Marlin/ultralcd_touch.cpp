@@ -302,7 +302,7 @@ static void lcd_event() {
       ftState &= ~FTSTATE_AUTOPID_ING;
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
-      lcd_setstatusPGM("PID autotune finished .", 1);
+      lcd_setstatusPGM(PSTR("PID autotune finished ."), 1);
       #if FYSTLCD_PAGE_EXIST(MAIN)
         lcd_set_page(FTPAGE(MAIN));
       #endif
@@ -312,7 +312,7 @@ static void lcd_event() {
       ftState &= ~FTSTATE_AUTOPID_ING;
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       sendActiveExtrudersParam();
-      lcd_setstatusPGM("PID autotune fail .", 1);
+      lcd_setstatusPGM(PSTR("PID autotune fail ."), 1);
       #if FYSTLCD_PAGE_EXIST(MAIN)
         lcd_set_page(FTPAGE(MAIN));
       #endif
@@ -1226,6 +1226,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       thermalManager.setTargetHotend(0, active_extruder);
       break;
     case VARVAL_TOOL_AUTOPID:
+      thermalManager.setTargetHotend(210, active_extruder);
       lcd_pid_autotune();
       break;
     case VARVAL_TOOL_LOCK_AXIS:

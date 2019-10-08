@@ -305,11 +305,13 @@ uint8_t Temperature::soft_pwm_amount[HOTENDS];
 
     if (!WITHIN(hotend, _BOT_HOTEND, _TOP_HOTEND)) {
       SERIAL_ECHOLNPGM(MSG_PID_BAD_EXTRUDER_NUM);
+      lcd_setstatusPGM(PSTR(MSG_PID_BAD_EXTRUDER_NUM));
       return;
     }
 
     if (target > GHV(BED_MAXTEMP, maxttemp[hotend]) - 15) {
       SERIAL_ECHOLNPGM(MSG_PID_TEMP_TOO_HIGH);
+      lcd_setstatusPGM(PSTR(MSG_PID_TEMP_TOO_HIGH));
       return;
     }
 
