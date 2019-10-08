@@ -633,7 +633,7 @@ void lcd_update() {
 static inline void lcd_pid_autotune() {
   char str[30];
   readActiveExtrudersParam();
-  sprintf(str, "M303 E%d C5 S%d U1", active_extruder, thermalManager.target_temperature[active_extruder]);
+  sprintf(str, "M303 E%d C5 S210 U1", active_extruder);
   enqueue_and_echo_command(str);
   ftState |= FTSTATE_AUTOPID_ING;
 }
@@ -1226,7 +1226,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       thermalManager.setTargetHotend(0, active_extruder);
       break;
     case VARVAL_TOOL_AUTOPID:
-      thermalManager.setTargetHotend(210, active_extruder);
+      //thermalManager.setTargetHotend(210, active_extruder);
       lcd_pid_autotune();
       break;
     case VARVAL_TOOL_LOCK_AXIS:

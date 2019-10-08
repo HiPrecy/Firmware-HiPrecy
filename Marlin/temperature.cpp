@@ -457,6 +457,9 @@ uint8_t Temperature::soft_pwm_amount[HOTENDS];
       #endif
       if (((ms - t1) + (ms - t2)) > (MAX_CYCLE_TIME_PID_AUTOTUNE * 60L * 1000L)) {
         SERIAL_PROTOCOLLNPGM(MSG_PID_TIMEOUT);
+        #if ENABLED(TOUCH_LCD)
+          lcd_set_event(LCDEVT_AUTOPID_FAIL);
+        #endif
         break;
       }
 
@@ -503,6 +506,11 @@ uint8_t Temperature::soft_pwm_amount[HOTENDS];
             _SET_BED_PID();
           #endif
         }
+
+        #if ENABLED(TOUCH_LCD)
+          lcd_set_event(LCDEVT_AUTOPID_SUCCESS);
+        #endif
+
         return;
       }
       lcd_update();
