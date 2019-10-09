@@ -312,6 +312,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     PAGENUM_INFO_OPTION                     21
 #define     PAGENUM_INFO_POPUP                      23
 #define     PAGENUM_INFO_WAITING                    25
+#define     PAGENUM_INFO_ERROR                      26
 #define     PAGENUM_AUTO_LEVELING_COMPLETE          0
 #define     PAGENUM_LEVELING_METHOD                 0
 #define     PAGENUM_TUNE_PID                        0

@@ -3793,8 +3793,8 @@ void lcd_kill_screen() {
   //SERIAL_ECHOLNPAIR("utf_string_buf ",utf_string_buf);
   touch_lcd::ftPuts(VARADDR_POP_INFOS[2], utf_string_buf, INFO_POPUP_LEN);
 
-  #if FYSTLCD_PAGE_EXIST(INFO_WAITING)    
-    lcd_set_page(FTPAGE(INFO_WAITING));
+  #if FYSTLCD_PAGE_EXIST(INFO_ERROR)    
+    lcd_set_page(FTPAGE(INFO_ERROR));
     //SERIAL_ECHOLN("lcd_pop_page");
   #endif
 }
