@@ -40,7 +40,7 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 #define     VARADDR_PRINT_TIME                      0x1150  
 #define     VARADDR_BOOT_SCREEN                     0x1160
 #define     VARADDR_STATUS                          0x1168
-#define     VARADDR_STATUS_MSG_LEN                  24
+#define     VARADDR_STATUS_MSG_LEN                  48
 
 // Pop up info menu
 #define     INFOS_NUM                               4
