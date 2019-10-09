@@ -437,7 +437,7 @@ static void lcd_check() {
           card.beginautostart();  // Initial boot
         }
         else {
-          //set_status_P(PSTR(MSG_SD_INSERTED));
+          LCD_MESSAGEPGM(MSG_SD_INSERTED);
           if(card.cardOK) {
             myFysTLcd.ftCmdStart(VARADDR_STATUS_SD);
             myFysTLcd.ftCmdPut16(1);
@@ -448,7 +448,7 @@ static void lcd_check() {
       else {
         card.release();
         if (old_sd_status != 2) {
-          //set_status_P(PSTR(MSG_SD_REMOVED));
+          LCD_MESSAGEPGM(MSG_SD_REMOVED);
           myFysTLcd.ftCmdStart(VARADDR_STATUS_SD);
           myFysTLcd.ftCmdPut16(0);
           myFysTLcd.ftCmdSend();
@@ -961,7 +961,7 @@ static void dwin_update_file_list(bool valid) {
             }
 
             //SERIAL_PROTOCOLLN(card.longFilename);
-            SERIAL_PROTOCOLLN(sdFileName);            
+            //SERIAL_PROTOCOLLN(sdFileName);
           }
         }
         
@@ -1686,17 +1686,6 @@ static void dwin_on_cmd_print(uint16_t tval)
             #endif                
           }
           else {          
-            #if ENABLED(USB_FLASH_DRIVE_SUPPORT)
-              //Sd2Card::resetState();
-              card.initsd();
-              if(!card.cardOK) {
-                SERIAL_ECHOLN("SD card reset state and init fail");
-                #if FYSTLCD_PAGE_EXIST(FILE_INSERT_CARD)
-                  lcd_set_page(FTPAGE(FILE_INSERT_CARD));
-                #endif
-                break;
-              }
-            #endif           
             #if FYSTLCD_PAGE_EXIST(FILELIST)
               lcd_set_page(FTPAGE(FILELIST));
             #endif
@@ -1890,11 +1879,11 @@ static void dwin_on_cmd_print(uint16_t tval)
               			if (card.filenameIsDir) {
               				card.chdir(card.filename);                				
               				dwinFileWindowTopIndex = card.get_num_Files();
-              				SERIAL_ECHOLNPAIR("isDir index:", dwinFileWindowTopIndex);
+                      //SERIAL_ECHOLNPAIR("isDir index:", dwinFileWindowTopIndex);
               				dwin_update_file_list(true);
               			}
               			else {              			  
-              			  SERIAL_ECHOLNPAIR("file select:", card.filename);
+                      //SERIAL_ECHOLNPAIR("file select:", card.filename);
                       #if defined(FILE_PRINT_NEED_CONRIRM)
 
                         #if FYSTLCD_PAGE_EXIST(PRINTFILE_CONFIRM)
@@ -1916,31 +1905,20 @@ static void dwin_on_cmd_print(uint16_t tval)
       }
     }
     else {
-      #if ENABLED(USB_FLASH_DRIVE_SUPPORT)
-        Sd2Card::resetState();        
-      #endif
+      if(!IS_SD_INSERTED()) {
+        lcd_setalertstatusPGM(PSTR("SD card not found."));
+        SERIAL_ECHOLN("SD card not found.");
+        return;
+      }
+
       card.initsd();
       if(!card.cardOK) {
-        // geo-f : we need to call idle many times to init it , magic!
-        #if ENABLED(USB_FLASH_DRIVE_SUPPORT)
-          for(uint8_t i=0;i<30;i++) {
-            Sd2Card::idle();   
-            safe_delay(10);
-          }
-          card.initsd();
-          if(!card.cardOK) {        
-            #if FYSTLCD_PAGE_EXIST(FILE_INSERT_CARD)
-              lcd_set_page(FTPAGE(FILE_INSERT_CARD));
-            #endif
-
-            return;
-          }    
-        #else 
-          #if FYSTLCD_PAGE_EXIST(FILE_INSERT_CARD)
-            lcd_set_page(FTPAGE(FILE_INSERT_CARD));
-          #endif
-          return;
-        #endif
+        //#if FYSTLCD_PAGE_EXIST(FILE_INSERT_CARD)
+        //  lcd_set_page(FTPAGE(FILE_INSERT_CARD));
+        //#endif
+        lcd_setalertstatusPGM(PSTR(MSG_SD_INIT_FAIL));
+        SERIAL_ECHOLNPGM(MSG_SD_INIT_FAIL);
+        return;
       }
       
       switch (tval) {
@@ -1951,17 +1929,6 @@ static void dwin_on_cmd_print(uint16_t tval)
             #endif                
           }
           else {
-            #if ENABLED(USB_FLASH_DRIVE_SUPPORT)
-              Sd2Card::resetState();
-              card.initsd();
-              if(!card.cardOK) {
-                SERIAL_ECHOLN("SD card reset state and init fail");
-                #if FYSTLCD_PAGE_EXIST(FILE_INSERT_CARD)
-                  lcd_set_page(FTPAGE(FILE_INSERT_CARD));
-                #endif
-                break;
-              }
-            #endif
             #if FYSTLCD_PAGE_EXIST(FILELIST)
               lcd_set_page(FTPAGE(FILELIST));
             #endif
@@ -2393,27 +2360,29 @@ static void dwin_on_cmd(millis_t& tNow) {
       fanSpeeds[active_extruder] = tval;
     #endif
     break;
+
   case VARADDR_TUNE_PREHEAT_CUSTOM:
+    filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM;
     myFysTLcd.ftCmdStart(VARADDR_TUNE_PREHEAT_CUSTOM);
     if (myFysTLcd.ftCmdReceive(2)) {
-      switch(filament_choice) {
-        case TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM:
-        case TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM:
-          myFysTLcd.ftCmdGetI16(lcd_preheat_hotend_temp[FILAMENTS-1]);
-          filament_temp_preheat();
-          break;
-
-        case TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM:
-          myFysTLcd.ftCmdGetI16(lcd_preheat_bed_temp[FILAMENTS-1]);
-          filament_temp_preheat(true);
-          break;
-      }
-      SERIAL_ECHOLNPAIR("filament_choice", filament_choice);
-      SERIAL_ECHOLNPAIR("lcd_preheat_bed_temp", lcd_preheat_bed_temp[FILAMENTS-1]);
+      myFysTLcd.ftCmdGetI16(lcd_preheat_hotend_temp[FILAMENTS-1]);
+      filament_temp_preheat();
     }
 
     sendActiveExtrudersParam();
     break;
+
+  case VARADDR_TUNE_PREHEAT_CUSTOM_BED:
+    filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM;
+    myFysTLcd.ftCmdStart(VARADDR_TUNE_PREHEAT_CUSTOM_BED);
+    if (myFysTLcd.ftCmdReceive(2)) {
+      myFysTLcd.ftCmdGetI16(lcd_preheat_bed_temp[FILAMENTS-1]);
+      filament_temp_preheat(true);
+    }
+
+    sendActiveExtrudersParam();
+    break;
+
   case VARADDR_TUNE_PREHEAT_HOTEND_TEMP:
     thermalManager.setTargetHotend(tval, 0);
     break;
