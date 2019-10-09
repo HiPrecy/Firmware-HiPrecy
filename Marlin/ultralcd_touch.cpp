@@ -1794,9 +1794,6 @@ static void dwin_on_cmd_print(uint16_t tval)
           retPageId = PAGENUM_PRINT;
           currentPageId = PAGENUM_PRINT;
           readParam_Tune_fan();
-          #if ENABLED(BABYSTEPPING)
-            settings.save();
-          #endif
           break;
 
         #if ENABLED(POWER_LOSS_RECOVERY)
@@ -2609,6 +2606,12 @@ static void lcd_period_report(int16_t s) {
     myFysTLcd.ftCmdSend();      
   #endif
 
+  myFysTLcd.ftCmdStart(VARADDR_FLOW);
+  for (uint8_t e = 0; e < EXTRUDERS; e++) {
+    myFysTLcd.ftCmdPut16(planner.flow_percentage[e]);
+  }
+  myFysTLcd.ftCmdSend();
+
   #if ENABLED(SDSUPPORT)
   
     if (IS_SD_PRINTING()) {
@@ -2764,9 +2767,8 @@ static void sendParam_Tune(){
 
   // VARADDR_PARAM_TUNE + 0x0b
   myFysTLcd.ftCmdPut16(feedrate_percentage);
-  for (e = 0; e < EXTRUDERS; e++)
-  {
-      myFysTLcd.ftCmdPut16(planner.flow_percentage[e]); 
+  for (e = 0; e < EXTRUDERS; e++) {
+    myFysTLcd.ftCmdPut16(planner.flow_percentage[e]); 
   }
   for (; e < 5; e++) myFysTLcd.ftCmdJump(2);
   
@@ -2815,14 +2817,13 @@ static void readParam_Tune()
         myFysTLcd.ftCmdJump(2);
       #endif
 
-      // move to readParam_Tune_fan
       uint8_t e;
-      //#if FAN_COUNT > 0
-      //  for (e = 0; e<FAN_COUNT; e++) myFysTLcd.ftCmdGetI16(fanSpeeds[e]);
-      //  for (; e<5; e++) myFysTLcd.ftCmdJump(2);
-      //#else
-      myFysTLcd.ftCmdJump(10);
-      //#endif
+      #if FAN_COUNT > 0
+        for (e = 0; e<FAN_COUNT; e++) myFysTLcd.ftCmdGetI16(fanSpeeds[e]);
+        for (; e<5; e++) myFysTLcd.ftCmdJump(2);
+      #else
+        myFysTLcd.ftCmdJump(10);
+      #endif
       
       myFysTLcd.ftCmdGetI16(feedrate_percentage);
       for (e = 0; e < EXTRUDERS; e++) {         
@@ -2839,7 +2840,7 @@ static void sendParam_Tune_fan(){
   // VARADDR_PARAM_TUNE + 6
   #if FAN_COUNT > 0
     for(e=0;e<FAN_COUNT;e++) {
-        myFysTLcd.ftCmdPut16(fanSpeeds[e]);
+      myFysTLcd.ftCmdPut16(fanSpeeds[e]);
     }
     for (; e<5; e++)myFysTLcd.ftCmdJump(2);
   #else

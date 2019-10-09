@@ -29,7 +29,8 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 #define     VARADDR_PERIOD_DATA_COORD_4             0x1107
 #define     VARADDR_ZOFFSET_DATA                    0x1110  
 #define     VARADDR_EXTRUDERS_TEMP                  0x1111  // max end: 0x1114 , 5 extruders 
-#define     VARADDR_FANS                            0x1116 
+#define     VARADDR_FANS                            0x1116
+#define     VARADDR_FLOW                            0x1118
 
 #define     VARADDR_ACTIVE_EXTRUDER_PARAM           0x1120  
 #define     VARADDR_ACTIVE_EXTRUDER_HOTEND          0x1121
@@ -48,6 +49,7 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 
 // Parameters
 #define     VARADDR_PARAM_TUNE                      0x1200  // 1200~1205:temp 1206~120A:fan
+#define     VARADDR_PARAM_TUNE_FLOW                 0x120C
 #define     VARADDR_PARAM_MOTOR                     0x1280  
 #define     VARADDR_PARAM_LEVELING                  0x1380  
 #define     VARADDR_PARAM_TEMP                      0x1400  
