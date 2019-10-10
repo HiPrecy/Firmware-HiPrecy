@@ -289,11 +289,11 @@ static void lcd_init_datas() {
   touch_lcd::ftPuts(VARADDR_SERIAL_NUMBER, SERIAL_NUMBER, ATTACH_STR_LEN);
 
   #if ENABLED(PRINTCOUNTER)
-    printStatistics state = print_job_timer.getStats();
-    myFysTLcd.ftCmdStart(VARADDR_INFO_PRINT);
-    myFysTLcd.ftCmdPut16(state.totalPrints);
-    myFysTLcd.ftCmdSend();
     char buffer[21];
+    printStatistics state = print_job_timer.getStats();
+    sprintf_P(buffer, PSTR("%u"), state.totalPrints);
+    touch_lcd::ftPuts(VARADDR_INFO_PRINT, buffer, ATTACH_STR_LEN);
+
     duration_t elapsed = state.printTime;
     elapsed.toString(buffer);
     touch_lcd::ftPuts(VARADDR_INFO_PRINT_ACC_TIME, buffer, ATTACH_STR_LEN);
