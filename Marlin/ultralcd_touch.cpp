@@ -1913,9 +1913,6 @@ static void dwin_on_cmd_print(uint16_t tval)
 
       card.initsd();
       if(!card.cardOK) {
-        //#if FYSTLCD_PAGE_EXIST(FILE_INSERT_CARD)
-        //  lcd_set_page(FTPAGE(FILE_INSERT_CARD));
-        //#endif
         lcd_setalertstatusPGM(PSTR(MSG_SD_INIT_FAIL));
         SERIAL_ECHOLNPGM(MSG_SD_INIT_FAIL);
         return;
