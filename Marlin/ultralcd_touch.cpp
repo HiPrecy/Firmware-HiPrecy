@@ -508,10 +508,6 @@ static void lcd_task_first_layer_cal() {
 		char cmd1[30];
 		static uint8_t filament = 0;
 
-    // if user dont confirm live adjust Z value by pressing the knob,
-    // we are saving last value by timeout to status screen
-		//if(first_layer_cal_step>1) lcd_timeoutToStatus.start();
-
     if (!planner.has_blocks_queued() && commands_in_queue==0) { //  && !saved_printing
       switch(first_layer_cal_step) {
       case 0:
@@ -546,9 +542,6 @@ static void lcd_task_first_layer_cal() {
         first_layer_cal_step = 9;
         break;
       case 9:
-        //lcd_clear();
-        //menu_depth = 0;
-        //menu_submenu(lcd_babystep_z);
         // popup zoffset menu
         #if FYSTLCD_PAGE_EXIST(FIRST_LAYER_PRINT)
           lcd_set_page(FTPAGE(FIRST_LAYER_PRINT));
@@ -570,17 +563,13 @@ static void lcd_task_first_layer_cal() {
         break;
       case 2:
         if(lay1cal_end()) {
-          //forceMenuExpire = true; //if user dont confirm live adjust Z value by pressing the knob, we are saving last value by timeout to status screen
           first_layer_cal_step = 1;
         }
         break;
       case 1:
-        lcd_setstatusPGM(WELCOME_MSG);
+        lcd_setstatusPGM(PSTR(WELCOME_MSG));
         first_layer_cal_step = 0;
         ftState &= ~FTSTATE_FIRST_LAYER_CAL;
-        //if (eeprom_read_byte((uint8_t*)EEPROM_WIZARD_ACTIVE) == 1) {
-        //  lcd_wizard(WizState::RepeatLay1Cal);
-        //}
         #if FYSTLCD_PAGE_EXIST(UTILITY)
           lcd_set_page(FTPAGE(UTILITY));
         #endif
@@ -1298,7 +1287,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       //
       #if ENABLED(TMC_Z_CALIBRATION)
         lcd_calibrating_z = true;
-        enqueue_and_echo_commands_P(PSTR("G28\nM915"));
+        enqueue_and_echo_commands_P(PSTR("G28\nM915\nG28\nG29"));
       #endif
       break;
       
