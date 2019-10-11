@@ -322,7 +322,6 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     PAGENUM_TOOL_CALIBRATION                0
 #define     PAGENUM_TOOL_PAPERHEIGHT                0
 #define     PAGENUM_UTILITY                         70
-#define     PAGENUM_FILAMENT                        70
 #define     PAGENUM_FILAMENT_LOAD_1                 72
 #define     PAGENUM_FILAMENT_LOAD_2                 0
 #define     PAGENUM_FILAMENT_LOADING                76
