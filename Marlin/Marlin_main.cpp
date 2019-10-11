@@ -4645,12 +4645,6 @@ inline void gcode_G28(const bool always_home_all) {
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("<<< G28");
   #endif
-
-  #if ENABLED(TOUCH_LCD) && ENABLED(TMC_Z_CALIBRATION)
-    if (parser.seen('Z')) {
-      lcd_flag_calibrate_z_done();
-    }
-  #endif
 } // G28
 
 void home_all_axes() { gcode_G28(true); }
@@ -5806,6 +5800,10 @@ void home_all_axes() { gcode_G28(true); }
     #endif
 
     report_current_position();
+
+    #if ENABLED(TOUCH_LCD) && ENABLED(TMC_Z_CALIBRATION)
+      lcd_flag_calibrate_z_done();
+    #endif
   }
 
 #endif // OLDSCHOOL_ABL

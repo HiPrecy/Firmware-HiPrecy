@@ -60,16 +60,18 @@ bool lay1cal_preheat_f(uint8_t filament) {
   static const char cmd_preheat_16[] PROGMEM = "M109 S" STRINGIFY(PREHEAT_4_TEMP_HOTEND);
 
   static const char cmd_preheat_17[] PROGMEM = "G28";
-  static const char cmd_preheat_18[] PROGMEM = "G92 E0.0";
+  static const char cmd_preheat_18[] PROGMEM = "G29";
+  static const char cmd_preheat_19[] PROGMEM = "G28";
+  static const char cmd_preheat_20[] PROGMEM = "G92 E0.0";
 
-  static const char * const preheat_cmd[][7] PROGMEM = {
-    { cmd_preheat_0, cmd_preheat_1, cmd_preheat_2, cmd_preheat_3, cmd_preheat_4, cmd_preheat_17, cmd_preheat_18 },
-    { cmd_preheat_0, cmd_preheat_5, cmd_preheat_6, cmd_preheat_7, cmd_preheat_8, cmd_preheat_17, cmd_preheat_18 },
-    { cmd_preheat_0, cmd_preheat_9, cmd_preheat_10, cmd_preheat_11, cmd_preheat_12, cmd_preheat_17, cmd_preheat_18 },
-    { cmd_preheat_0, cmd_preheat_13, cmd_preheat_14, cmd_preheat_15, cmd_preheat_16, cmd_preheat_17, cmd_preheat_18 }
+  static const char * const preheat_cmd[][9] PROGMEM = {
+    { cmd_preheat_0, cmd_preheat_1, cmd_preheat_2, cmd_preheat_3, cmd_preheat_4, cmd_preheat_17, cmd_preheat_18,cmd_preheat_19, cmd_preheat_20 },
+    { cmd_preheat_0, cmd_preheat_5, cmd_preheat_6, cmd_preheat_7, cmd_preheat_8, cmd_preheat_17, cmd_preheat_18,cmd_preheat_19, cmd_preheat_20 },
+    { cmd_preheat_0, cmd_preheat_9, cmd_preheat_10, cmd_preheat_11, cmd_preheat_12, cmd_preheat_17, cmd_preheat_18,cmd_preheat_19, cmd_preheat_20 },
+    { cmd_preheat_0, cmd_preheat_13, cmd_preheat_14, cmd_preheat_15, cmd_preheat_16, cmd_preheat_17, cmd_preheat_18,cmd_preheat_19, cmd_preheat_20 }
   };
 
-  for (; i < 7; ++i) {
+  for (; i < 9; ++i) {
     if (5 == i) { 
       if(0 > enqueue_layre1cal_commands_P(PSTR("M117 First layer cal."))) {
         return false;
@@ -371,8 +373,10 @@ bool lay1cal_end() {
   static const char cmd_end_2[] PROGMEM = "M104 S0";
   static const char cmd_end_3[] PROGMEM = "M140 S0";
   static const char cmd_end_4[] PROGMEM = "G1 Z10 F1300.000";
-  static const char cmd_end_5[] PROGMEM = "G1 X10 Y180 F4000";
+  //static const char cmd_end_5[] PROGMEM = "G1 X10 Y180 F4000";
+  static const char cmd_end_5[] PROGMEM = "G28";
   static const char cmd_end_6[] PROGMEM = "M84";
+  static const char cmd_end_7[] PROGMEM = "M500";
   
   static const char * const cmd_end[] PROGMEM = {
     cmd_end_0,

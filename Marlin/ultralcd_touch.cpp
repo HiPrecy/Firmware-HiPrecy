@@ -109,7 +109,7 @@ float move_dis, move_feedrate;
 generalVoidFun periodFun = nullptr;
 static touch_lcd myFysTLcd;
 
-#define MOVE_E_LENGTH_EACH_TIME 1.0
+#define MOVE_E_LENGTH_EACH_TIME 0.5
 #define MOVE_E_FEEDRATE 3.0
 #define MOVE_XYZ_FEEDRATE 50.0
 
@@ -585,6 +585,7 @@ static void lcd_task_first_layer_cal() {
 void lcd_flag_calibrate_z_done() {
   if(lcd_calibrating_z) {
     lcd_calibrating_z = false;
+    ftState|=FTSTATE_NEED_SAVE_PARAM;
     #if FYSTLCD_PAGE_EXIST(UTILITY)
       lcd_set_page_force(FTPAGE(UTILITY));
     #endif
@@ -1161,7 +1162,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     case VARVAL_TOOL_PREHEAT_CUSTOM:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM;
       #if FYSTLCD_PAGE_EXIST(TEMP_PREHEAT_CUSTOM)
-        lcd_set_page(FTPAGE(TEMP_PREHEAT_CUSTOM));
+        lcd_set_page_force(FTPAGE(TEMP_PREHEAT_CUSTOM));
       #endif      
       break;
       
@@ -1271,11 +1272,10 @@ static void dwin_on_cmd_tool(uint16_t tval) {
           lcd_babystep_zoffset();
           break;
         case VARVAL_TOOL_BABYSTEP_Z_SAVE:
-          lcd_save_settings();
           first_layer_cal_step = 2;
           lay1cal_init();
-          #if FYSTLCD_PAGE_EXIST(MAIN)
-            lcd_set_page(FTPAGE(MAIN));
+          #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+            lcd_set_page(FTPAGE(INFO_WAITING));
           #endif
           break;
       #endif
@@ -1392,8 +1392,8 @@ static void dwin_on_cmd_tool(uint16_t tval) {
         thermalManager.setTargetHotend(0, 1);
       #endif
       sendActiveExtrudersParam();
-      #if FYSTLCD_PAGE_EXIST(FILAMENT)
-        lcd_set_page(FTPAGE(FILAMENT));
+      #if FYSTLCD_PAGE_EXIST(UTILITY)
+        lcd_set_page(FTPAGE(UTILITY));
       #endif
       break;
       
@@ -2468,7 +2468,8 @@ static void lcd_period_prompt_report() {
   
   lcd_icon_state++;
   if (lcd_icon_state > 9) lcd_icon_state = 0;
-  
+
+  //10A7 fan ico
   #if FAN_COUNT > 0
     if (fanSpeeds[active_extruder] > 0) {
       myFysTLcd.ftCmdPut16(lcd_icon_state);      
@@ -2480,17 +2481,20 @@ static void lcd_period_prompt_report() {
     myFysTLcd.ftCmdJump(2);
   #endif
 
+  //10A8 print ico
   #if ENABLED(SDSUPPORT)
-    if (card.sdprinting)// print ico
+    if (card.sdprinting)
       myFysTLcd.ftCmdPut16(lcd_icon_state);
     else
   #endif
-  
   myFysTLcd.ftCmdJump(2);
-  
-  myFysTLcd.ftCmdJump(2);//10A9 reserved
+
+  //10A9 waiting ico
+  myFysTLcd.ftCmdPut16(lcd_icon_state);
+
+  //10AA auto PID ico
   if (ftState&FTSTATE_AUTOPID_ING) {
-    myFysTLcd.ftCmdPut16(lcd_icon_state);//10AA auto PID ico
+    myFysTLcd.ftCmdPut16(lcd_icon_state);
   }
   else {
     myFysTLcd.ftCmdJump(2);
