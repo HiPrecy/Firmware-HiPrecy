@@ -1401,7 +1401,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       //#if HAS_BED_PROBE
       //  zprobe_zoffset -=0.3;
       //#endif
-      dwin_popup(PSTR("\n    Leveling is in progress."),EPPT_INFO_WAITING); // geo-f : comment 20180608
+      dwin_popup(PSTR("\n    Leveling is in progress."),EPPT_INFO_WAITING);
       enqueue_and_echo_commands_P(PSTR("G28"));
       enqueue_and_echo_commands_P(PSTR("G29"));
       break;
