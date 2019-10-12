@@ -519,33 +519,41 @@ class Temperature {
     #if ENABLED(BABYSTEPPING)
 
       static void babystep_axis(const AxisEnum axis, const int16_t distance) {
-        if (TEST(axis_known_position, axis)) {
-          #if IS_CORE
-            #if ENABLED(BABYSTEP_XY)
-              switch (axis) {
-                case CORE_AXIS_1: // X on CoreXY and CoreXZ, Y on CoreYZ
-                  babystepsTodo[CORE_AXIS_1] += distance * 2;
-                  babystepsTodo[CORE_AXIS_2] += distance * 2;
-                  break;
-                case CORE_AXIS_2: // Y on CoreXY, Z on CoreXZ and CoreYZ
-                  babystepsTodo[CORE_AXIS_1] += CORESIGN(distance * 2);
-                  babystepsTodo[CORE_AXIS_2] -= CORESIGN(distance * 2);
-                  break;
-                case NORMAL_AXIS: // Z on CoreXY, Y on CoreXZ, X on CoreYZ
-                  babystepsTodo[NORMAL_AXIS] += distance;
-                  break;
-              }
-            #elif CORE_IS_XZ || CORE_IS_YZ
-              // Only Z stepping needs to be handled here
-              babystepsTodo[CORE_AXIS_1] += CORESIGN(distance * 2);
-              babystepsTodo[CORE_AXIS_2] -= CORESIGN(distance * 2);
-            #else
-              babystepsTodo[Z_AXIS] += distance;
-            #endif
+        #if ENABLED(BABYSTEP_WITHOUT_HOMING)
+          #define CAN_BABYSTEP(AXIS) true
+        #else
+          extern uint8_t axis_known_position;
+          #define CAN_BABYSTEP(AXIS) TEST(axis_known_position, AXIS)
+        #endif
+
+        if (!CAN_BABYSTEP(axis)) return;
+  
+        #if IS_CORE
+          #if ENABLED(BABYSTEP_XY)
+            switch (axis) {
+              case CORE_AXIS_1: // X on CoreXY and CoreXZ, Y on CoreYZ
+                babystepsTodo[CORE_AXIS_1] += distance * 2;
+                babystepsTodo[CORE_AXIS_2] += distance * 2;
+                break;
+              case CORE_AXIS_2: // Y on CoreXY, Z on CoreXZ and CoreYZ
+                babystepsTodo[CORE_AXIS_1] += CORESIGN(distance * 2);
+                babystepsTodo[CORE_AXIS_2] -= CORESIGN(distance * 2);
+                break;
+              case NORMAL_AXIS: // Z on CoreXY, Y on CoreXZ, X on CoreYZ
+                babystepsTodo[NORMAL_AXIS] += distance;
+                break;
+            }
+          #elif CORE_IS_XZ || CORE_IS_YZ
+            // Only Z stepping needs to be handled here
+            babystepsTodo[CORE_AXIS_1] += CORESIGN(distance * 2);
+            babystepsTodo[CORE_AXIS_2] -= CORESIGN(distance * 2);
           #else
-            babystepsTodo[axis] += distance;
+            babystepsTodo[Z_AXIS] += distance;
           #endif
-        }
+        #else
+          babystepsTodo[axis] += distance;
+        #endif
+
       }
 
     #endif // BABYSTEPPING
