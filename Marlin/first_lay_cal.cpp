@@ -244,7 +244,7 @@ bool lay1cal_meander(char *cmd_buffer) {
   char str_1[16];
 
   static const char cmd_meander_0[] PROGMEM = "G1 X50 Y155";
-  static const char cmd_meander_1[] PROGMEM = "G1 Z0.150 F7200.000";
+  static const char cmd_meander_1[] PROGMEM = "G1 Z0.30 F7200.000";
   static const char cmd_meander_2[] PROGMEM = "G1 F1080";
   static const char cmd_meander_3[] PROGMEM = "G1 X75 Y155 E2.5";
   static const char cmd_meander_4[] PROGMEM = "G1 X100 Y155 E2";
@@ -373,8 +373,8 @@ bool lay1cal_end() {
   static const char cmd_end_2[] PROGMEM = "M104 S0";
   static const char cmd_end_3[] PROGMEM = "M140 S0";
   static const char cmd_end_4[] PROGMEM = "G1 Z10 F1300.000";
-  //static const char cmd_end_5[] PROGMEM = "G1 X10 Y180 F4000";
-  static const char cmd_end_5[] PROGMEM = "G28";
+  static const char cmd_end_5[] PROGMEM = "G1 X10 Y180 F4000";
+  //static const char cmd_end_5[] PROGMEM = "G28";
   static const char cmd_end_6[] PROGMEM = "M84";
   static const char cmd_end_7[] PROGMEM = "M500";
   
