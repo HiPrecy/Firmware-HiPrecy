@@ -8585,6 +8585,10 @@ inline void gcode_M105() {
       #endif // EXTRA_FAN_SPEED
       const uint16_t s = parser.ushortval('S', 255);
       fanSpeeds[p] = MIN(s, 255U);
+      #if ENABLED(DUAL_FAN_CONTROL)
+        if(p==0) fanSpeeds[1] = MIN(s, 255U);
+        if(p==1) fanSpeeds[0] = MIN(s, 255U);
+      #endif
     }
   }
 
