@@ -1769,7 +1769,7 @@ static void dwin_on_cmd_print(uint16_t tval)
           currentPageId = PAGENUM_PRINT;
           readParam_Tune();
           #if ENABLED(BABYSTEPPING)
-            settings.save();
+            lcd_save_settings();
           #endif
           break;
 
