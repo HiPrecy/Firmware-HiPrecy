@@ -109,7 +109,7 @@ float move_dis, move_feedrate;
 generalVoidFun periodFun = nullptr;
 static touch_lcd myFysTLcd;
 
-#define MOVE_E_LENGTH_EACH_TIME 0.5
+#define MOVE_E_LENGTH_EACH_TIME 5.2
 #define MOVE_E_FEEDRATE 3.0
 #define MOVE_XYZ_FEEDRATE 50.0
 
@@ -615,8 +615,8 @@ static void lcd_period_task(millis_t& tNow)  {
   static millis_t period = 1000;
    
   if ( tNow > period || \
-       (ftState&FTSTATE_EXECUTE_PERIOD_TASK_NOW)) {
-      
+       ftState&FTSTATE_EXECUTE_PERIOD_TASK_NOW) {
+
     if (periodFun) periodFun();
     
     millis_t distance = 0;
@@ -653,7 +653,7 @@ static void lcd_period_task(millis_t& tNow)  {
   // status message
   static millis_t status_period = 1300;
   if ( tNow > status_period || \
-       (ftState&FTSTATE_STATUS_MESSAGE_NOW) ) {
+       ftState&FTSTATE_STATUS_MESSAGE_NOW ) {
       dwin_set_status(lcd_status_message);
   }       
 
@@ -873,44 +873,56 @@ static int16_t filament_temp_preheat(bool ifHeatBed = false) {
 }
 
 static void filament_load() {
-  int16_t tempe = filament_temp_preheat(false) - 5;
+  int16_t tempe = 0;
   uint8_t extru_index = 0;
+
   if (filament_choice < FILAMENTS){
     extru_index = 0;
+    tempe = lcd_preheat_hotend_temp[filament_choice];
   }
   #if EXTRUDERS>1
     else if(filament_choice < FILAMENTS*2){
       extru_index = 1;
+      tempe = lcd_preheat_hotend_temp[filament_choice-FILAMENTS];
     }
   #endif
-  if (!planner.is_full() && thermalManager.degHotend(extru_index) > tempe){
+
+  if (planner.movesplanned()<2 && \
+      ABS(thermalManager.degHotend(extru_index)-tempe)<10){
+
     #if FYSTLCD_PAGE_EXIST(FILAMENT_LOADING)
-      lcd_set_page(FTPAGE(FILAMENT_LOADING));
-    #endif      
+      lcd_set_page_force(FTPAGE(FILAMENT_LOADING));
+    #endif
     current_position[E_AXIS] += MOVE_E_LENGTH_EACH_TIME;
-    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 
-        MOVE_E_FEEDRATE, extru_index);
+    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], 
+                        current_position[E_AXIS], MOVE_E_FEEDRATE, extru_index);
   }
 }
 
 static void filament_unload() {
-  int16_t tempe = filament_temp_preheat(false) - 5;
+  int16_t tempe = 0;
   uint8_t extru_index = 0;
+
   if (filament_choice < FILAMENTS){
     extru_index = 0;
+    tempe = lcd_preheat_hotend_temp[filament_choice];
   }
   #if EXTRUDERS>1
     else if(filament_choice < FILAMENTS*2){
       extru_index = 1;
+      tempe = lcd_preheat_hotend_temp[filament_choice-FILAMENTS];
     }
   #endif
-  if (!planner.is_full() && thermalManager.degHotend(extru_index) > tempe){
+
+  if (planner.movesplanned()<2 && \
+      ABS(thermalManager.degHotend(extru_index)-tempe)<10) {
+
     #if FYSTLCD_PAGE_EXIST(FILAMENT_UNLOADING)
-      lcd_set_page(FTPAGE(FILAMENT_UNLOADING));
+      lcd_set_page_force(FTPAGE(FILAMENT_UNLOADING));
     #endif 
     current_position[E_AXIS] -= MOVE_E_LENGTH_EACH_TIME;
-    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], 
-        MOVE_E_FEEDRATE, extru_index);
+    planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], \
+                        current_position[E_AXIS], MOVE_E_FEEDRATE, extru_index);
   }
 }
 
@@ -1287,7 +1299,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       //
       #if ENABLED(TMC_Z_CALIBRATION)
         lcd_calibrating_z = true;
-        enqueue_and_echo_commands_P(PSTR("G28\nM915\nG28\nG29"));
+        enqueue_and_echo_commands_P(PSTR("G28\nM915"));
       #endif
       break;
       
@@ -1776,8 +1788,9 @@ static void dwin_on_cmd_print(uint16_t tval)
 
         #if ENABLED(POWER_LOSS_RECOVERY)
           case VARVAL_PRINT_RECOVERY_YES:
-            SERIAL_PROTOCOLPGM("Power-loss continue");
+            SERIAL_PROTOCOLPGM("Power-loss continue ");
             touch_lcd::ftPuts(VARADDR_PRINTFILE_NAME, job_recovery_info.sd_filename, FYSTLCD_FILENAME_LEN);
+            SERIAL_PROTOCOLLNPAIR("file:",job_recovery_info.sd_filename);
             lcd_power_loss_recovery_resume();
             break;              
           case VARVAL_PRINT_RECOVERY_NO:
@@ -2193,36 +2206,44 @@ static void dwin_on_cmd(millis_t& tNow) {
         
       case VARVAL_FILAMENT_OPE_EXTRU1_PLA:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
+        filament_temp_preheat(false);
         periodFun = filament_load;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_ABS:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
+        filament_temp_preheat(false);
         periodFun = filament_load;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_PET:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
+        filament_temp_preheat(false);
         periodFun = filament_load;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_FLEX:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
+        filament_temp_preheat(false);
         periodFun = filament_load;
         break;
 
       #if EXTRUDERS>1
         case VARVAL_FILAMENT_OPE_EXTRU2_PLA:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_temp_preheat(false);
           periodFun = filament_load;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_ABS:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
+          filament_temp_preheat(false);
           periodFun = filament_load;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_PET:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_temp_preheat(false);
           periodFun = filament_load;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_FLEX:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_temp_preheat(false);
           periodFun = filament_load;          
           break;      
       #endif
@@ -2249,36 +2270,44 @@ static void dwin_on_cmd(millis_t& tNow) {
 
       case VARVAL_FILAMENT_OPE_EXTRU1_PLA:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PLA;
+        filament_temp_preheat(false);
         periodFun = filament_unload;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_ABS:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
+        filament_temp_preheat(false);
         periodFun = filament_unload;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_PET:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
+        filament_temp_preheat(false);
         periodFun = filament_unload;
         break;
       case VARVAL_FILAMENT_OPE_EXTRU1_FLEX:
         filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
+        filament_temp_preheat(false);
         periodFun = filament_unload;
         break;
 
       #if EXTRUDERS>1
         case VARVAL_FILAMENT_OPE_EXTRU2_PLA:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_temp_preheat(false);
           periodFun = filament_unload;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_ABS:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
+          filament_temp_preheat(false);
           periodFun = filament_unload;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_PET:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_temp_preheat(false);
           periodFun = filament_unload;
           break;
         case VARVAL_FILAMENT_OPE_EXTRU2_FLEX:
           filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
+          filament_temp_preheat(false);
           periodFun = filament_unload;
           break;      
       #endif   
