@@ -130,34 +130,6 @@ bool touch_lcd_aborting_print = false;
   static bool lcd_calibrating_z = 0;
 #endif
 
-static void sendParam_Tune();
-static void readParam_Tune();
-static void sendParam_Tune_fan();
-static void readParam_Tune_fan();
-static void sendParam_Motor();
-static void readParam_Motor();
-static void sendActiveExtrudersParam();
-static void readActiveExtrudersParam();
-#if HOTENDS > 1
-  static void sendParam_ExtrudersOffset();
-  static void readParam_ExtrudersOffset();
-  static void sendParam_ExtrudersTemp();
-  static void readParam_ExtrudersTemp();
-  static void sendParam_ExtrudersMotor();
-  static void readParam_ExtrudersMotor();
-#endif
-static void sendParam_Leveling();
-static void readParam_Leveling();
-static void sendParam_Temp();
-static void readParam_Temp();
-static void sendParam_Material();
-static void readParam_Material();
-static void sendParam_TMC2130();
-static void readParam_TMC2130();
-static void sendParam_system();
-static void readParam_system();
-static void sendParam_zoffset();
-static void readParam_zoffset();
 static void lcd_period_report(int16_t s);
 static void lcd_period_prompt_report();
 static void lcd_period_task(millis_t& tNow);
@@ -176,6 +148,1043 @@ static void dwin_set_status(const char * msg);
     static void lcd_babystep_z();
   #endif
 #endif
+
+static void dwin_read_extruders_para() {
+  myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDER_PARAM);
+  if (myFysTLcd.ftCmdReceive(22)) {
+    myFysTLcd.ftCmdJump(2);// ignore hotend number
+    int16_t t;
+    myFysTLcd.ftCmdGetI16(t);
+    myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, 0));
+    myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, 0));
+    PID_PARAM(Ki, 0) = scalePID_i(PID_PARAM(Ki, 0));
+    myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, 0));
+    PID_PARAM(Kd, 0) = scalePID_d(PID_PARAM(Kd, 0));
+    #if ENABLED(PID_EXTRUSION_SCALING)
+      myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, 0));
+    #else
+      myFysTLcd.ftCmdJump(4);
+    #endif
+    thermalManager.setTargetHotend(t, 0);
+
+    #if HAS_TEMP_BED
+      myFysTLcd.ftCmdGetI16(t);
+      thermalManager.setTargetBed(t);
+    #endif
+  }
+
+  #if EXTRUDERS == 2
+
+    myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDERS_PARAM);
+    if (myFysTLcd.ftCmdReceive(20)) {
+      myFysTLcd.ftCmdJump(2);// ignore hotend number
+      int16_t t;
+      myFysTLcd.ftCmdGetI16(t);
+      myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, 1));
+      myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, 1));
+      PID_PARAM(Ki, 1) = scalePID_i(PID_PARAM(Ki, 1));
+      myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, 1));
+      PID_PARAM(Kd, 1) = scalePID_d(PID_PARAM(Kd, 1));
+      #if ENABLED(PID_EXTRUSION_SCALING)
+        myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, 1));
+      #else
+        myFysTLcd.ftCmdJump(4);
+      #endif
+      thermalManager.setTargetHotend(t, 1);
+    }
+
+  #endif
+}
+
+static void dwin_write_extruders_para() {
+  myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDER_PARAM);
+  //int n = active_extruder;
+  myFysTLcd.ftCmdPut16(0);
+  myFysTLcd.ftCmdPut16(thermalManager.target_temperature[0]);
+  myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, 0));
+  myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, 0)));
+  myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, 0)));
+  #if ENABLED(PID_EXTRUSION_SCALING)
+    myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, 0));
+  #else
+    myFysTLcd.ftCmdJump(4);
+  #endif
+  
+  #if HAS_TEMP_BED
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature_bed);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+  myFysTLcd.ftCmdSend();
+
+  #if EXTRUDERS == 2
+    myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDERS_PARAM);
+    myFysTLcd.ftCmdPut16(1);
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[1]);
+    myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, 1));
+    myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, 1)));
+    myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, 1)));
+    #if ENABLED(PID_EXTRUSION_SCALING)
+      myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, 1));
+    #else
+      myFysTLcd.ftCmdJump(4);
+    #endif
+
+    myFysTLcd.ftCmdSend();
+  #endif
+}
+
+static void dwin_write_print_tune_para(){
+  uint8_t e;
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE);
+  #if HAS_TEMP_ADC_0
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[0]);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+  #if HAS_TEMP_ADC_1
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[1]);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+  #if HAS_TEMP_ADC_2
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[2]);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+  #if HAS_TEMP_ADC_3
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[3]);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+  #if HAS_TEMP_ADC_4
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[4]);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+  #if HAS_TEMP_BED
+    myFysTLcd.ftCmdPut16(thermalManager.target_temperature_bed);
+  #else
+    myFysTLcd.ftCmdJump(2);
+  #endif
+
+  // VARADDR_PARAM_TUNE + 0x06
+  #if FAN_COUNT > 0
+    for(e=0; e<FAN_COUNT; e++) myFysTLcd.ftCmdPut16(fanSpeeds[e]);
+    for (; e<5; e++) myFysTLcd.ftCmdJump(2);
+  #else
+    myFysTLcd.ftCmdJump(10);
+  #endif
+
+  // VARADDR_PARAM_TUNE + 0x0b
+  myFysTLcd.ftCmdPut16(feedrate_percentage);
+  for (e = 0; e < EXTRUDERS; e++) {
+    myFysTLcd.ftCmdPut16(planner.flow_percentage[e]); 
+  }
+  for (; e < 5; e++) myFysTLcd.ftCmdJump(2);
+  
+  myFysTLcd.ftCmdSend();
+}
+
+static void dwin_read_print_tune_para()
+{
+    int16_t t;
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE);
+    if (myFysTLcd.ftCmdReceive(32)) {
+      #if HAS_TEMP_ADC_0
+        myFysTLcd.ftCmdGetI16(t);
+        thermalManager.setTargetHotend(t, 0);
+      #else
+        myFysTLcd.ftCmdJump(2);
+      #endif
+      #if HAS_TEMP_ADC_1
+        myFysTLcd.ftCmdGetI16(t);
+        thermalManager.setTargetHotend(t, 1);
+      #else
+        myFysTLcd.ftCmdJump(2);
+      #endif
+      #if HAS_TEMP_ADC_2
+        myFysTLcd.ftCmdGetI16(t);
+        thermalManager.setTargetHotend(t,2);
+      #else
+        myFysTLcd.ftCmdJump(2);
+      #endif
+      #if HAS_TEMP_ADC_3
+        myFysTLcd.ftCmdGetI16(t);
+        thermalManager.setTargetHotend(t,3);
+      #else
+        myFysTLcd.ftCmdJump(2);
+      #endif
+      #if HAS_TEMP_ADC_4
+        myFysTLcd.ftCmdGetI16(t);
+        thermalManager.setTargetHotend(t, 4);
+      #else
+        myFysTLcd.ftCmdJump(2);
+      #endif
+      #if HAS_TEMP_BED
+        myFysTLcd.ftCmdGetI16(t);
+        thermalManager.setTargetBed(t);
+      #else
+        myFysTLcd.ftCmdJump(2);
+      #endif
+
+      uint8_t e;
+      #if FAN_COUNT > 0
+        for (e = 0; e<FAN_COUNT; e++) myFysTLcd.ftCmdGetI16(fanSpeeds[e]);
+        for (; e<5; e++) myFysTLcd.ftCmdJump(2);
+      #else
+        myFysTLcd.ftCmdJump(10);
+      #endif
+      
+      myFysTLcd.ftCmdGetI16(feedrate_percentage);
+      for (e = 0; e < EXTRUDERS; e++) {         
+		    myFysTLcd.ftCmdGetI16(planner.flow_percentage[e]);
+		    planner.refresh_e_factor(e);
+      }
+      for (; e<5; e++)myFysTLcd.ftCmdJump(2);		
+    }
+}
+
+static void dwin_write_print_tune_fan_para(){
+  uint8_t e;
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE+6);  
+  // VARADDR_PARAM_TUNE + 6
+  #if FAN_COUNT > 0
+    for(e=0;e<FAN_COUNT;e++) {
+      myFysTLcd.ftCmdPut16(fanSpeeds[e]);
+    }
+    for (; e<5; e++)myFysTLcd.ftCmdJump(2);
+  #else
+    myFysTLcd.ftCmdJump(10);
+  #endif
+
+  myFysTLcd.ftCmdSend();
+}
+
+static void dwin_read_print_tune_fan_para()
+{
+    int16_t t;
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE+6);
+    if (myFysTLcd.ftCmdReceive(10)) {      
+      uint8_t e;
+      #if FAN_COUNT > 0
+        for (e = 0; e<FAN_COUNT; e++) myFysTLcd.ftCmdGetI16(fanSpeeds[e]);
+        for (; e<5; e++) myFysTLcd.ftCmdJump(2);
+      #else
+        myFysTLcd.ftCmdJump(10);
+      #endif	
+    }
+}
+
+static void dwin_write_motor_para() {    
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_MOTOR);
+  for (uint8_t i = 0; i < 4; i++)
+  {
+      myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[i]);
+  }
+  for (uint8_t i = 0; i < 4; i++)
+  {
+      myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[i]);
+  }
+  myFysTLcd.ftCmdSend();
+
+  for (uint8_t i = 0; i < 4; i++)
+  {
+      myFysTLcd.ftCmdPutI32((int32_t)planner.max_acceleration_mm_per_s2[i]);
+  }
+  myFysTLcd.ftCmdPutF32(planner.acceleration);
+  myFysTLcd.ftCmdPutF32(planner.retract_acceleration);
+  myFysTLcd.ftCmdPutF32(planner.travel_acceleration);
+  myFysTLcd.ftCmdPutF32(planner.min_feedrate_mm_s);
+  myFysTLcd.ftCmdSend();
+
+  //myFysTLcd.ftCmdPutI32((int32_t)planner.min_segment_time);
+  myFysTLcd.ftCmdPutI32((int32_t)planner.min_segment_time_us);
+  myFysTLcd.ftCmdPutF32(planner.min_travel_feedrate_mm_s);
+  for(uint8_t i=0;i<4;i++)
+  {
+      myFysTLcd.ftCmdPutF32(planner.max_jerk[i]);
+  }
+  myFysTLcd.ftCmdSend();
+
+#if HAS_HOME_OFFSET
+  #if ENABLED(DELTA)
+  myFysTLcd.ftCmdJump(8);
+  float f=DELTA_HEIGHT + home_offset[Z_AXIS];
+  myFysTLcd.ftCmdPutF32(f);
+  #else
+  for(uint8_t i=0;i<3;i++)
+  {
+      myFysTLcd.ftCmdPutF32(home_offset[i]);
+  }
+  #endif
+#else
+  myFysTLcd.ftCmdJump(12);
+#endif
+#if HAS_MOTOR_CURRENT_PWM
+  for (uint8_t q = 0; q<3;q++)
+  {
+      myFysTLcd.ftCmdPutI32((int32_t)stepper.motor_current_setting[q]);
+  }
+  myFysTLcd.ftCmdPutI32(MOTOR_CURRENT_PWM_RANGE);
+#else
+  myFysTLcd.ftCmdJump(16);
+#endif
+  myFysTLcd.ftCmdSend();
+}
+static void dwin_read_motor_para() {   
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_MOTOR);
+  if (myFysTLcd.ftCmdReceive(32))
+  {
+      for (uint8_t i = 0; i < 4; i++)
+      {
+          myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[i]);
+      }
+			planner.refresh_positioning(); // geo-f:20180726
+      for (uint8_t i = 0; i < 4; i++)
+      {
+          myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[i]);
+      }
+  }
+  myFysTLcd.ftCmdClear();
+  if (myFysTLcd.ftCmdReceive(32))
+  {
+      int32_t t;
+      for (uint8_t i = 0; i < 4; i++)
+      {
+          myFysTLcd.ftCmdGetI32(t);
+          planner.max_acceleration_mm_per_s2[i] = t;
+      }
+      myFysTLcd.ftCmdGetF32(planner.acceleration);
+      myFysTLcd.ftCmdGetF32(planner.retract_acceleration);
+      myFysTLcd.ftCmdGetF32(planner.travel_acceleration);
+      myFysTLcd.ftCmdGetF32(planner.min_feedrate_mm_s);
+  }
+  myFysTLcd.ftCmdClear();
+  if (myFysTLcd.ftCmdReceive(24))
+  {
+      int32_t t;
+      myFysTLcd.ftCmdGetI32(t);
+      //planner.min_segment_time = t;
+      planner.min_segment_time_us = t; 
+      myFysTLcd.ftCmdGetF32(planner.min_travel_feedrate_mm_s);
+      myFysTLcd.ftCmdGetF32(planner.max_jerk[X_AXIS]);
+      myFysTLcd.ftCmdGetF32(planner.max_jerk[Y_AXIS]);
+      myFysTLcd.ftCmdGetF32(planner.max_jerk[Z_AXIS]);
+      myFysTLcd.ftCmdGetF32(planner.max_jerk[E_AXIS]);
+  }
+  myFysTLcd.ftCmdClear();
+  if (myFysTLcd.ftCmdReceive(24))
+  {
+#if HAS_HOME_OFFSET
+  #if ENABLED(DELTA)
+      myFysTLcd.ftCmdJump(8);
+      myFysTLcd.ftCmdGetF32(home_offset[Z_AXIS]);
+      home_offset[Z_AXIS] -= DELTA_HEIGHT;
+  #else
+      for (uint8_t i = 0; i < 3; i++)
+      {
+          myFysTLcd.ftCmdGetF32(home_offset[i]);
+      }
+  #endif
+#else
+      myFysTLcd.ftCmdJump(12);
+#endif
+#if HAS_MOTOR_CURRENT_PWM
+      int32_t t;
+      for (uint8_t q = 0; q<3; q++)
+      {
+          myFysTLcd.ftCmdGetI32(t);
+          stepper.motor_current_setting[q]=t;
+      }
+#else
+      myFysTLcd.ftCmdJump(12);
+#endif
+  }
+}
+
+#if HOTENDS > 1
+static void dwin_write_extruders_offset() {
+  uint8_t e;
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_OFFSET);
+  #if EXTRUDERS==5
+    for (e = 1; e < 4; e++)
+    {
+        for (uint8_t axis = 0; axis < 3; axis++)
+        {
+            myFysTLcd.ftCmdPutF32(hotend_offset[axis][e]);
+        }
+    }
+    myFysTLcd.ftCmdSend(); 
+    for (uint8_t axis = 0; axis < 3; axis++)
+    {
+        myFysTLcd.ftCmdPutF32(hotend_offset[axis][4]);
+    }
+    myFysTLcd.ftCmdSend(); 
+  #else
+    for (e = 1; e < EXTRUDERS; e++)
+    {
+        for (uint8_t axis = 0; axis < 3; axis++)
+        {
+            myFysTLcd.ftCmdPutF32(hotend_offset[axis][e]);
+        }
+    }
+    myFysTLcd.ftCmdSend();
+  #endif
+}
+static void dwin_read_extruders_offset()
+{
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_OFFSET);
+  #if EXTRUDERS==5
+    if (myFysTLcd.ftCmdReceive(36))
+    {
+        for (uint8_t e = 1; e < 4; e++)
+        for (uint8_t axis = 0; axis < 3; axis++)
+        {
+            myFysTLcd.ftCmdGetF32(hotend_offset[axis][e]);
+        }
+    }
+    myFysTLcd.ftCmdClear();
+    if (myFysTLcd.ftCmdReceive(12))
+    {
+        for (uint8_t axis = 0; axis < 3; axis++)
+        {
+            myFysTLcd.ftCmdGetF32(hotend_offset[axis][4]);
+        }
+    }
+  #else
+    if (myFysTLcd.ftCmdReceive((EXTRUDERS - 1) * 12))
+    {
+        for (uint8_t e = 1; e < EXTRUDERS; e++)
+        for (uint8_t axis = 0; axis < 3; axis++)
+        {
+            myFysTLcd.ftCmdGetF32(hotend_offset[axis][e]);
+        }
+    }
+  #endif
+}
+static void dwin_write_extruders_motor()
+{
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_MOTOR);
+#if EXTRUDERS==5
+    for (uint8_t e = 1; e < 4; e++)
+    {
+        myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[3 + e]);
+        myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[3 + e]);
+        myFysTLcd.ftCmdPutF32(planner.max_acceleration_mm_per_s2[3 + e]);
+    }
+    myFysTLcd.ftCmdSend();
+    myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[7]);
+    myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[7]);
+    myFysTLcd.ftCmdPutF32(planner.max_acceleration_mm_per_s2[7]);
+    myFysTLcd.ftCmdSend();
+#else
+    for (uint8_t e = 1; e < EXTRUDERS; e++)
+    {
+        myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[3 + e]);
+        myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[3 + e]);
+        myFysTLcd.ftCmdPutF32(planner.max_acceleration_mm_per_s2[3 + e]);
+    }
+    myFysTLcd.ftCmdSend();
+#endif
+}
+static void dwin_read_extruders_motor_para()
+{
+    int32_t t;
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_MOTOR);
+#if EXTRUDERS==5
+    if (myFysTLcd.ftCmdReceive(36))
+    {
+        for (uint8_t e = 1; e < 4; e++)
+        {
+            myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[3 + e]);
+            myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[3 + e]);
+            myFysTLcd.ftCmdGetI32(t);
+            planner.max_acceleration_mm_per_s2[3 + e] = t;
+        }
+    }
+    myFysTLcd.ftCmdClear();
+    if (myFysTLcd.ftCmdReceive(12))
+    {
+        myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[7]);
+        myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[7]);
+        myFysTLcd.ftCmdGetI32(t);
+        planner.max_acceleration_mm_per_s2[7] = t;
+    }
+#else
+    if (myFysTLcd.ftCmdReceive((EXTRUDERS - 1) * 12))
+    {
+        for (uint8_t e = 1; e < EXTRUDERS; e++)
+        {
+            myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[3 + e]);
+            myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[3 + e]);
+            myFysTLcd.ftCmdGetI32(t);
+            planner.max_acceleration_mm_per_s2[3 + e] = t;
+        }
+    }
+#endif
+}
+static void dwin_write_extruders_temp() {
+  uint8_t e;
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_TEMP);
+  #if EXTRUDERS>3
+    for (e = 1; e < 3; e++) {
+      myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, e));
+      myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, e)));
+      myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, e)));
+      #if ENABLED(PID_EXTRUSION_SCALING)
+        myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, e));
+      #else
+        myFysTLcd.ftCmdJump(4);
+      #endif
+    }
+    myFysTLcd.ftCmdSend();
+    for (; e < EXTRUDERS; e++) {
+      myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, e));
+      myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, e)));
+      myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, e)));
+      #if ENABLED(PID_EXTRUSION_SCALING)
+        myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, e));
+      #else
+        myFysTLcd.ftCmdJump(4);
+      #endif
+    }
+    myFysTLcd.ftCmdSend();
+  #else
+    for (e = 1; e < EXTRUDERS; e++)
+    {
+        myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, e));
+        myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, e)));
+        myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, e)));
+        #if ENABLED(PID_EXTRUSION_SCALING)
+        myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, e));
+        #else
+        myFysTLcd.ftCmdJump(4);
+        #endif
+    }
+    myFysTLcd.ftCmdSend();
+  #endif
+}
+static void dwin_read_extruders_temp()
+{
+  uint8_t e;
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_TEMP);
+  #if EXTRUDERS>3
+    if (myFysTLcd.ftCmdReceive(32)) {
+        for (e = 1; e < 3; e++)
+        {
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, e));
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, e));
+            PID_PARAM(Ki, e) = scalePID_i(PID_PARAM(Ki, e));
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, e));
+            PID_PARAM(Kd, e) = scalePID_d(PID_PARAM(Kd, e));
+        #if ENABLED(PID_EXTRUSION_SCALING)
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, e));
+        #else
+            myFysTLcd.ftCmdJump(4);
+        #endif
+        }
+    }
+    myFysTLcd.ftCmdClear();
+    if (myFysTLcd.ftCmdReceive(32))
+    {
+        for (; e < EXTRUDERS; e++)
+        {
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, e));
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, e));
+            PID_PARAM(Ki, e) = scalePID_i(PID_PARAM(Ki, e));
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, e));
+            PID_PARAM(Kd, e) = scalePID_d(PID_PARAM(Kd, e));
+        #if ENABLED(PID_EXTRUSION_SCALING)
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, e));
+        #else
+            myFysTLcd.ftCmdJump(4);
+        #endif
+        }
+    }
+  #else
+    if (myFysTLcd.ftCmdReceive(16*(EXTRUDERS-1)))
+    {
+        for (e = 1; e < EXTRUDERS; e++)
+        {
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, e));
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, e));
+            PID_PARAM(Ki, e) = scalePID_i(PID_PARAM(Ki, e));
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, e));
+            PID_PARAM(Kd, e) = scalePID_d(PID_PARAM(Kd, e));
+        #if ENABLED(PID_EXTRUSION_SCALING)
+            myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, e));
+        #else
+            myFysTLcd.ftCmdJump(4);
+        #endif
+        }
+    }
+  #endif
+}
+#endif
+
+static void dwin_write_leveling_para() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
+  // Global Leveling
+  #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
+    myFysTLcd.ftCmdPutF32(planner.z_fade_height);
+  #else
+    myFysTLcd.ftCmdJump(4);
+  #endif
+
+  // Planar Bed Leveling matrix
+  #if ABL_PLANAR
+    for (char i = 0; i < 9; i++) {
+      myFysTLcd.ftCmdPutF32(planner.bed_level_matrix.matrix[i]);
+    }
+  #else
+    myFysTLcd.ftCmdJump(36);
+  #endif
+
+  myFysTLcd.ftCmdSend();
+}
+
+static void dwin_read_leveling_para() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
+  if (myFysTLcd.ftCmdReceive(4)) {
+    // Global Leveling
+    #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
+      myFysTLcd.ftCmdGetF32(planner.z_fade_height);
+    #endif
+  }
+  if (myFysTLcd.ftCmdReceive(36)) {
+    // Planar Bed Leveling matrix
+    #if ABL_PLANAR
+      for (char i = 0; i < 9; i++) {
+        myFysTLcd.ftCmdGetF32(planner.bed_level_matrix.matrix[i]);
+      }
+    #endif
+  }
+}
+
+static void dwin_write_zoffset_para() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
+  #if HAS_BED_PROBE
+    myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
+  #endif
+  myFysTLcd.ftCmdSend();
+}
+
+static void dwin_read_zoffset_para() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
+  if (myFysTLcd.ftCmdReceive(2)) {
+    #if HAS_BED_PROBE
+      myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
+    #endif
+  }
+}
+
+static void dwin_write_temperture_para() {
+  myFysTLcd.ftCmdStart(VARADDR_PARAM_TEMP);
+  #if ENABLED(PIDTEMP)
+    myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, 0));
+    myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, 0)));
+    myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, 0)));
+    #if ENABLED(PID_EXTRUSION_SCALING)
+    myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, 0));
+    #else
+    myFysTLcd.ftCmdJump(4);
+    #endif
+  #else
+    myFysTLcd.ftCmdJump(16);
+  #endif //!PIDTEMP
+    myFysTLcd.ftCmdSend();
+
+  #if DISABLED(PIDTEMPBED)
+    myFysTLcd.ftCmdJump(16);
+  #else
+    myFysTLcd.ftCmdPutF32(thermalManager.bedKp);
+    myFysTLcd.ftCmdPutF32(unscalePID_i(thermalManager.bedKi));
+    myFysTLcd.ftCmdPutF32(unscalePID_d(thermalManager.bedKd));
+    myFysTLcd.ftCmdJump(4);
+  #endif
+  myFysTLcd.ftCmdSend();
+}
+static void dwin_read_temperture_para()
+{
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_TEMP);
+    if (myFysTLcd.ftCmdReceive(32)) {
+      #if ENABLED(PIDTEMP)
+        myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, 0));
+        myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, 0));
+        PID_PARAM(Ki, 0) = scalePID_i(PID_PARAM(Ki, 0));
+        myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, 0));
+        PID_PARAM(Kd, 0) = scalePID_d(PID_PARAM(Kd, 0));
+        #if ENABLED(PID_EXTRUSION_SCALING)
+          myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, 0));
+        #else
+          myFysTLcd.ftCmdJump(4);
+        #endif
+        thermalManager.update_pid();
+      #else
+        myFysTLcd.ftCmdJump(16);
+      #endif //!PIDTEMP
+
+      #if DISABLED(PIDTEMPBED)
+        myFysTLcd.ftCmdJump(16);
+      #else
+        myFysTLcd.ftCmdGetF32(thermalManager.bedKp);
+        myFysTLcd.ftCmdGetF32(thermalManager.bedKi);
+        thermalManager.bedKi = scalePID_i(thermalManager.bedKi);
+        myFysTLcd.ftCmdGetF32(thermalManager.bedKd);
+        thermalManager.bedKd = scalePID_d(thermalManager.bedKd);
+        myFysTLcd.ftCmdJump(4);
+      #endif
+    }
+    myFysTLcd.ftCmdClear();
+}
+
+static void dwin_write_filament_para()
+{
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_MATERIAL);
+#if ENABLED(FWRETRACT)
+    myFysTLcd.ftCmdPut16(autoretract_enabled);
+    myFysTLcd.ftCmdPutF32(retract_length);
+    #if EXTRUDERS > 1
+    myFysTLcd.ftCmdPutF32(retract_length_swap);
+    #else
+    myFysTLcd.ftCmdJump(4);
+    #endif
+    myFysTLcd.ftCmdPutF32(retract_feedrate_mm_s);
+    myFysTLcd.ftCmdPutF32(retract_zlift);
+    myFysTLcd.ftCmdPutF32(retract_recover_length);
+    #if EXTRUDERS > 1
+    myFysTLcd.ftCmdPutF32(retract_recover_length_swap);
+    #else
+    myFysTLcd.ftCmdJump(4);
+    #endif
+    myFysTLcd.ftCmdPutF32(retract_recover_feedrate_mm_s);
+#else
+    myFysTLcd.ftCmdJump(30);
+#endif // FWRETRACT
+    //myFysTLcd.ftCmdPut16(volumetric_enabled); 
+	myFysTLcd.ftCmdPut16(parser.volumetric_enabled);
+    myFysTLcd.ftCmdSend();
+
+    uint8_t e;
+    //for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdPutF32(filament_size[e]); 
+    for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdPutF32(planner.filament_size[e]); 
+    for (; e < 5; e++)myFysTLcd.ftCmdJump(4);
+
+// Linear Advance
+#if ENABLED(LIN_ADVANCE)
+    myFysTLcd.ftCmdPutF32(planner.extruder_advance_k);
+    myFysTLcd.ftCmdPutF32(planner.advance_ed_ratio);
+#else
+    myFysTLcd.ftCmdJump(8);
+#endif
+    myFysTLcd.ftCmdSend();
+}
+static void dwin_read_filament_para()
+{
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_MATERIAL);
+    if(myFysTLcd.ftCmdReceive(32))
+    {
+        int16_t t;
+    #if ENABLED(FWRETRACT)
+        myFysTLcd.ftCmdGetI16(t);
+        autoretract_enabled=t;
+        myFysTLcd.ftCmdGetF32(retract_length);
+        #if EXTRUDERS > 1
+        myFysTLcd.ftCmdGetF32(retract_length_swap);
+        #else
+        myFysTLcd.ftCmdJump(4);
+        #endif
+        myFysTLcd.ftCmdGetF32(retract_feedrate_mm_s);
+        myFysTLcd.ftCmdGetF32(retract_zlift);
+        myFysTLcd.ftCmdGetF32(retract_recover_length);
+        #if EXTRUDERS > 1
+        myFysTLcd.ftCmdGetF32(retract_recover_length_swap);
+        #else
+        myFysTLcd.ftCmdJump(4);
+        #endif
+        myFysTLcd.ftCmdGetF32(retract_recover_feedrate_mm_s);
+    #else
+        myFysTLcd.ftCmdJump(30);
+    #endif // FWRETRACT
+        myFysTLcd.ftCmdGetI16(t);
+        //volumetric_enabled = t; 
+        parser.volumetric_enabled = t;
+    }
+    myFysTLcd.ftCmdClear();
+    if(myFysTLcd.ftCmdReceive(28))
+    {
+        uint8_t e;
+        //for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdGetF32(filament_size[e]);
+        for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdGetF32(planner.filament_size[e]);
+        for (; e < 5; e++)myFysTLcd.ftCmdJump(4);
+        // Linear Advance
+    #if ENABLED(LIN_ADVANCE)
+        myFysTLcd.ftCmdGetF32(planner.extruder_advance_k);
+        myFysTLcd.ftCmdGetF32(planner.advance_ed_ratio);
+    #endif
+    }
+}
+
+static void dwin_write_tmc2130_para()
+{
+    int16_t t;
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_TMC2130);
+#if ENABLED(HAVE_TMC2130)
+    #if ENABLED(X_IS_TMC2130)
+    t = stepperX.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Y_IS_TMC2130)
+    t=stepperY.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Z_IS_TMC2130)
+    t=stepperZ.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E0_IS_TMC2130)
+    t=stepperE0.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(X2_IS_TMC2130)
+    t=stepperX2.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Y2_IS_TMC2130)
+    t=stepperY2.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Z2_IS_TMC2130)
+    t=stepperZ2.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E1_IS_TMC2130)
+    t=stepperE1.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E2_IS_TMC2130)
+    t=stepperE2.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E3_IS_TMC2130)
+    t=stepperE3.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E4_IS_TMC2130)
+    t=stepperE4.getCurrent();
+    myFysTLcd.ftCmdPut16(t);
+    #else
+    myFysTLcd.ftCmdJump(2);
+    #endif
+#else
+    myFysTLcd.ftCmdJump(22);
+#endif
+    myFysTLcd.ftCmdSend();
+}
+static void dwin_read_tmc2130_para()
+{
+    int16_t t;
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_TMC2130);
+    if (myFysTLcd.ftCmdReceive(22))
+    {
+	#if ENABLED(HAVE_TMC2130)
+    #if ENABLED(X_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperX.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Y_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperY.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Z_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperZ.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(X2_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperX2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Y2_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t)
+        stepperY2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(Z2_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperZ2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E0_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperE0.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E1_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperE1.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E2_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperE2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E3_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperE3.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+    #if ENABLED(E4_IS_TMC2130)
+        myFysTLcd.ftCmdGetI16(t);
+        stepperE4.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
+    #else
+        myFysTLcd.ftCmdJump(2);
+    #endif
+#else
+        myFysTLcd.ftCmdJump(22);
+#endif
+    }
+}
+
+static void dwin_write_system_para()
+{
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_SYSTEM);
+#ifdef FYS_ENERGY_CONSERVE_HEIGHT
+    myFysTLcd.ftCmdPutF16(zEnergyHeight);
+#else
+    myFysTLcd.ftCmdJump(2);
+#endif
+
+#if PIN_EXISTS(PS_ON)&&defined(FYS_ACTIVE_TIME_OVER)
+    int16_t t=max_inactive_time/1000UL;
+    myFysTLcd.ftCmdPut16(t);
+#else
+    myFysTLcd.ftCmdJump(2);
+#endif
+    myFysTLcd.ftCmdSend();
+}
+static void dwin_read_system_para()
+{
+    myFysTLcd.ftCmdStart(VARADDR_PARAM_SYSTEM);
+    if (myFysTLcd.ftCmdReceive(4))
+    {
+      #ifdef FYS_ENERGY_CONSERVE_HEIGHT
+        myFysTLcd.ftCmdGetF16(zEnergyHeight);
+#else
+        myFysTLcd.ftCmdJump(2);
+#endif
+#if PIN_EXISTS(PS_ON)&&defined(FYS_ACTIVE_TIME_OVER)
+        int16_t t;
+        myFysTLcd.ftCmdGetI16(t);
+        max_inactive_time = (millis_t)t* 1000UL;
+#else
+        myFysTLcd.ftCmdJump(2);
+#endif
+    }
+}
+
+void dwin_popup(const char* msg, EM_POPUP_PAGE_TYPE pageChoose, char funid)
+{
+    char str[INFO_POPUP_LEN + 1], i, j, ch;
+    if (msg)
+    for (j = 0; j < INFOS_NUM; j++) {
+      memset(str, 0, INFO_POPUP_LEN);
+      i = 0;
+      while (ch = pgm_read_byte(msg)) {
+        if (ch == '\n') {
+            msg++;
+            break;
+        }
+        str[i++] = ch;
+        msg++;
+        if (i >= INFO_POPUP_LEN)break;
+      }
+      touch_lcd::ftPuts(VARADDR_POP_INFOS[j], str, INFO_POPUP_LEN);
+    }
+    
+    switch (pageChoose) {
+      case EPPT_INFO_POPUP:
+        #if FYSTLCD_PAGE_EXIST(INFO_POPUP)
+          lcd_pop_page(FTPAGE(INFO_POPUP));
+        #endif
+        break;
+      case EPPT_INFO_WAITING:
+        #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+          lcd_pop_page(FTPAGE(INFO_WAITING));
+        #endif
+        break;
+      case EPPT_INFO_OPTION:
+        switch (funid) {
+          #if ENABLED(ADVANCED_PAUSE_FEATURE)
+            case 1:
+                optionId = 1;
+                advanced_pause_menu_response = ADVANCED_PAUSE_RESPONSE_WAIT_FOR;
+                touch_lcd::ftPutsPGM(VARADDR_QUESTION_LEFT, PSTR("Resume"),8);
+                touch_lcd::ftPutsPGM(VARADDR_QUESTION_RIGHT, PSTR("Extrude"),8);
+                break;
+          #endif
+          default:
+              break;
+        }
+        #if FYSTLCD_PAGE_EXIST(INFO_OPTION)
+          lcd_pop_page(FTPAGE(INFO_OPTION));
+        #endif
+        break;
+      default:
+          break;
+    }
+}
+
+void dwin_popup_shutdown() {
+  if (
+      #if FYSTLCD_PAGE_EXIST(INFO_POPUP)
+        currentPageId == FTPAGE(INFO_POPUP) || 
+      #endif
+      #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+        currentPageId == FTPAGE(INFO_WAITING) ||
+      #endif
+      #if FYSTLCD_PAGE_EXIST(INFO_OPTION)
+        currentPageId == FTPAGE(INFO_OPTION) ||
+      #endif
+      0) {
+    lcd_pop_page(retPageId);
+  }
+}
 
 static void dwin_update_fan_status_ico(uint8_t ifan) {
   #if FAN_COUNT > 0
@@ -375,7 +1384,7 @@ static void lcd_event() {
     case LCDEVT_AUTOPID_SUCCESS:
       ftState &= ~FTSTATE_AUTOPID_ING;
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       lcd_setstatusPGM(PSTR("PID autotune finished ."), 1);
       #if FYSTLCD_PAGE_EXIST(PID_QUESTION)
         lcd_set_page(FTPAGE(PID_QUESTION));
@@ -385,7 +1394,7 @@ static void lcd_event() {
     case LCDEVT_AUTOPID_FAIL:
       ftState &= ~FTSTATE_AUTOPID_ING;
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       lcd_setstatusPGM(PSTR("PID autotune fail ."), 1);
       #if FYSTLCD_PAGE_EXIST(PID_QUESTION)
         lcd_set_page(FTPAGE(PID_QUESTION));
@@ -394,12 +1403,12 @@ static void lcd_event() {
       
     case LCDEVT_DETAIL_EXTRUDER:
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     
     case LCDEVT_LEVELING_COMPLETE:          
       #if FYSTLCD_PAGE_EXIST(AUTO_LEVELING_COMPLETE)&&!FYSTLCD_PAGE_EXIST(AUTO_LEVELING)
-      	sendParam_Leveling();
+      	dwin_write_leveling_para();
         if( !IS_SD_PRINTING && !print_job_timer.isRunning() ) 
         { 
            lcd_set_page(FTPAGE(MAIN));
@@ -696,7 +1705,7 @@ void lcd_update() {
 
 static inline void lcd_pid_autotune() {
   char str[30];
-  readActiveExtrudersParam();
+  dwin_read_extruders_para();
   sprintf(str, "M303 E%d C5 S210 U1", active_extruder);
   enqueue_and_echo_command(str);
   ftState |= FTSTATE_AUTOPID_ING;
@@ -704,7 +1713,7 @@ static inline void lcd_pid_autotune() {
 
 static inline void lcd_pid_autotune_bed() {
   char str[30];
-  readActiveExtrudersParam();
+  dwin_read_extruders_para();
   sprintf(str, "M303 E-1 C5 S70 U1");
   enqueue_and_echo_command(str);
   ftState |= FTSTATE_AUTOPID_ING;
@@ -748,7 +1757,6 @@ static inline void lcd_pid_autotune_bed() {
   #endif // !BABYSTEP_ZPROBE_OFFSET
 
 #endif // BABYSTEPPING
-
 
 static void moveAxis(AxisEnum axis, float val) {
 		if(planner.movesplanned()!=0) return;
@@ -1026,17 +2034,17 @@ static void reportCmdContent(uint16_t& tar) {
 static void dwin_on_cmd_tool(uint16_t tval) {
   switch (tval) {
     case VARADDR_TOOL_TUNEPID_ENTER:
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       ftState |= FTSTATE_EXECUTE_PERIOD_TASK_NOW;
       #if FYSTLCD_PAGE_EXIST(TUNE_PID)
         lcd_set_page(FTPAGE(TUNE_PID));
       #endif
       break;
     case VARADDR_TOOL_TUNEPID_APPLY:
-      readActiveExtrudersParam();
+      dwin_read_extruders_para();
       break;
     case VARADDR_TOOL_TUNEPID_SAVE:
-      readActiveExtrudersParam();
+      dwin_read_extruders_para();
       lcd_save_settings();
       break;
     case VARVAL_TOOL_HOME_ALL:
@@ -1127,49 +2135,49 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PLA;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_ABS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_ABS;
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_ABS;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_PVA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PVA;
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PVA;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_FLEX:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_FLEX;
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_FLEX;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_PET:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PET;
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PET;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_HIPS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_HIPS;
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_HIPS;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_PP:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_PP;
       filament_temp_preheat();
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PP;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_CUSTOM:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E1_CUSTOM;
@@ -1181,37 +2189,37 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PLA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PLA;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_ABS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_ABS;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PVA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PVA;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_FLEX:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_FLEX;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PET:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PET;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_HIPS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_HIPS;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_PP:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_PP;
       filament_temp_preheat();
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_EXTRUDER2_CUSTOM:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_E2_CUSTOM;
@@ -1223,37 +2231,37 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     case VARVAL_TOOL_PREHEAT_BED_PLA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PLA;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_ABS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_ABS;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_PVA:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PVA;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_FLEX:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_FLEX;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_PET:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PET;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_HIPS:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_HIPS;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_PP:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_PP;
       filament_temp_preheat(true);
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       break;
     case VARVAL_TOOL_PREHEAT_BED_CUSTOM:
       filament_choice = TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM;
@@ -1403,7 +2411,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       #if EXTRUDERS>1
         thermalManager.setTargetHotend(0, 1);
       #endif
-      sendActiveExtrudersParam();
+      dwin_write_extruders_para();
       #if FYSTLCD_PAGE_EXIST(UTILITY)
         lcd_set_page(FTPAGE(UTILITY));
       #endif
@@ -1758,7 +2766,7 @@ static void dwin_on_cmd_print(uint16_t tval)
           break;
             
         case VARVAL_PRINT_TUNE_ENTER:
-          sendParam_Tune();
+          dwin_write_print_tune_para();
           #if FYSTLCD_PAGE_EXIST(PRINT_TUNE)
             lcd_set_page(FTPAGE(PRINT_TUNE));
           #endif
@@ -1767,14 +2775,14 @@ static void dwin_on_cmd_print(uint16_t tval)
         case VARVAL_PRINT_TUNE_APPLY:
           retPageId = PAGENUM_PRINT;
           currentPageId = PAGENUM_PRINT;
-          readParam_Tune();
+          dwin_read_print_tune_para();
           #if ENABLED(BABYSTEPPING)
             lcd_save_settings();
           #endif
           break;
 
         case VARVAL_PRINT_TUNE_FAN_ENTER:
-          sendParam_Tune_fan();
+          dwin_write_print_tune_fan_para();
           #if FYSTLCD_PAGE_EXIST(PRINT_TUNE_FAN)
             lcd_set_page(FTPAGE(PRINT_TUNE_FAN));
           #endif
@@ -1783,7 +2791,7 @@ static void dwin_on_cmd_print(uint16_t tval)
         case VARVAL_PRINT_TUNE_FAN_APPLY:
           retPageId = PAGENUM_PRINT;
           currentPageId = PAGENUM_PRINT;
-          readParam_Tune_fan();
+          dwin_read_print_tune_fan_para();
           break;
 
         #if ENABLED(POWER_LOSS_RECOVERY)
@@ -1964,24 +2972,24 @@ static void dwin_on_cmd_print(uint16_t tval)
 static void dwin_on_cmd_setting(uint16_t tval) {
   switch (tval) {
     case VARVAL_SETTING_MOTOR_ENTER:
-        sendParam_Motor();
+        dwin_write_motor_para();
         #if HOTENDS > 1
-          sendParam_ExtrudersMotor();
+          dwin_write_extruders_motor();
         #endif
         #if FYSTLCD_PAGE_EXIST(SETTING_MOTOR)
           lcd_set_page_force(FTPAGE(SETTING_MOTOR));
         #endif
         break;
     case VARVAL_SETTING_MOTOR_APPLY:
-        readParam_Motor();
+        dwin_read_motor_para();
         #if HOTENDS > 1
-          readParam_ExtrudersMotor();
+          dwin_read_extruders_motor_para();
         #endif  
         break;
     case VARVAL_SETTING_MOTOR_SAVE:
-        readParam_Motor();
+        dwin_read_motor_para();
         #if HOTENDS > 1
-          readParam_ExtrudersMotor();
+          dwin_read_extruders_motor_para();
         #endif
         lcd_save_settings();
         #if FYSTLCD_PAGE_EXIST(SETTING)
@@ -1989,43 +2997,43 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         #endif
         break;
     case VARVAL_SETTING_LEVELING_ENTER:
-        sendParam_Leveling();
+        dwin_write_leveling_para();
         #if FYSTLCD_PAGE_EXIST(SETTING_LEVELING)
           lcd_set_page(FTPAGE(SETTING_LEVELING));
         #endif
         break;
     case VARVAL_SETTING_LEVELING_APPLY:
-        readParam_Leveling();
+        dwin_read_leveling_para();
         #if FYSTLCD_PAGE_EXIST(SETTING)
           lcd_set_page(FTPAGE(SETTING));
         #endif
         break;
     case VARVAL_SETTING_LEVELING_SAVE:
-        readParam_Leveling();
+        dwin_read_leveling_para();
         lcd_save_settings();
         break;
     case VARVAL_SETTING_TEMP_PARA_ENTER:
-        sendParam_Temp();
+        dwin_write_temperture_para();
         #if HOTENDS > 1
-          sendParam_ExtrudersTemp();
+          dwin_write_extruders_temp();
         #endif
         #if FYSTLCD_PAGE_EXIST(SETTING_TEMP_PARA)
           lcd_set_page(FTPAGE(SETTING_TEMP_PARA));
         #endif
         break;
     case VARVAL_SETTING_TEMP_PARA_APPLY:
-        readParam_Temp();
+        dwin_read_temperture_para();
         #if HOTENDS > 1
-          readParam_ExtrudersTemp();
+          dwin_read_extruders_temp();
         #endif
         #if FYSTLCD_PAGE_EXIST(SETTING)
           lcd_set_page(FTPAGE(SETTING));
         #endif
         break;
     case VARVAL_SETTING_TEMP_PARA_SAVE:
-        readParam_Temp();
+        dwin_read_temperture_para();
         #if HOTENDS > 1
-          readParam_ExtrudersTemp();
+          dwin_read_extruders_temp();
         #endif
         lcd_save_settings();
         #if FYSTLCD_PAGE_EXIST(SETTING)
@@ -2033,29 +3041,29 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         #endif
         break;
     case VARVAL_SETTING_MATERIAL_ENTER:
-        sendParam_Material();
+        dwin_write_filament_para();
         #if FYSTLCD_PAGE_EXIST(SETTING_MATERIAL)
         lcd_set_page(FTPAGE(SETTING_MATERIAL));
         #endif
         break;
     case VARVAL_SETTING_MATERIAL_APPLY:
-        readParam_Material();
+        dwin_read_filament_para();
         break;
     case VARVAL_SETTING_MATERIAL_SAVE:
-        readParam_Material();
+        dwin_read_filament_para();
         lcd_save_settings();
         break;
     case VARVAL_SETTING_TMC2130_ENTER:
-        sendParam_TMC2130();
+        dwin_write_tmc2130_para();
         #if FYSTLCD_PAGE_EXIST(SETTING_TMC2130)
         lcd_set_page(FTPAGE(SETTING_TMC2130));
         #endif
         break;
     case VARVAL_SETTING_TMC2130_APPLY:
-        readParam_TMC2130();
+        dwin_read_tmc2130_para();
         break;
     case VARVAL_SETTING_TMC2130_SAVE:
-        readParam_TMC2130();
+        dwin_read_tmc2130_para();
         lcd_save_settings();
         break;
     case VARVAL_SETTINGS_SAVE:
@@ -2072,29 +3080,29 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         lcd_load_settings();
         break;
     case VARVAL_SETTINGS_SYSTEM:
-        sendParam_system();
+        dwin_write_system_para();
         #if FYSTLCD_PAGE_EXIST(SETTING_SYSTEM)
           lcd_set_page(FTPAGE(SETTING_SYSTEM));
         #endif
         break;
     case VARVAL_SETTINGS_SYSTEM_APPLY:
-        readParam_system();
+        dwin_read_system_para();
         break;
     case VARVAL_SETTINGS_SYSTEM_SAVE:
-        readParam_system();
+        dwin_read_system_para();
         lcd_save_settings();
         break;
     case VARVAL_SETTING_ZOFFSET_ENTER:
-        sendParam_zoffset();
+        dwin_write_zoffset_para();
         #if FYSTLCD_PAGE_EXIST(SETTING_ZOFFSET)
           lcd_set_page(FTPAGE(SETTING_ZOFFSET));
         #endif
         break;
     case VARVAL_SETTING_ZOFFSET_APPLY:
-        readParam_zoffset();
+        dwin_read_zoffset_para();
         break;
     case VARVAL_SETTING_ZOFFSET_SAVE:
-        readParam_zoffset();
+        dwin_read_zoffset_para();
         lcd_save_settings();
         break;
   }
@@ -2138,45 +3146,45 @@ static void dwin_on_cmd(millis_t& tNow) {
     case VARADDR_EXTRUDERS:
       switch (tval) {
         case VARVAL_EXTRUDERS_OFFSET_ENTER:
-          sendParam_ExtrudersOffset();
+          dwin_write_extruders_offset();
           #if FYSTLCD_PAGE_EXIST(SETTING_EXTRUDERS_OFFSET)
           lcd_set_page(FTPAGE(SETTING_EXTRUDERS_OFFSET));
           #endif
           break;
         case VARVAL_EXTRUDERS_OFFSET_APPLY:
-          readParam_ExtrudersOffset();
+          dwin_read_extruders_offset();
           break;
         case VARVAL_EXTRUDERS_OFFSET_SAVE:
-          readParam_ExtrudersOffset();
+          dwin_read_extruders_offset();
           lcd_save_settings();
           break;
         case VARVAL_EXTRUDERS_MOTOR_ENTER:
-          sendParam_ExtrudersMotor();
+          dwin_write_extruders_motor();
           #if FYSTLCD_PAGE_EXIST(SETTING_EXTRUDERS_MOTOR)
           lcd_set_page(FTPAGE(SETTING_EXTRUDERS_MOTOR));
           #endif
           break;
         case VARVAL_EXTRUDERS_MOTOR_APPLY:
-          readParam_ExtrudersMotor();
+          dwin_read_extruders_motor_para();
           break;
         case VARVAL_EXTRUDERS_MOTOR_SAVE:
-          readParam_ExtrudersMotor();
+          dwin_read_extruders_motor_para();
           lcd_save_settings();
           break;
         case VARVAL_EXTRUDERS_TEMP_ENTER:
-          sendParam_ExtrudersTemp();
+          dwin_write_extruders_temp();
           #if FYSTLCD_PAGE_EXIST(SETTING_EXTRUDERS_TEMP)
           lcd_set_page(FTPAGE(SETTING_EXTRUDERS_TEMP));
           #endif
           break;
         case VARVAL_EXTRUDERS_TEMP_APPLY:
-          readParam_ExtrudersTemp();
+          dwin_read_extruders_temp();
           #if FYSTLCD_PAGE_EXIST(SETTING)
             lcd_set_page(FTPAGE(SETTING));
           #endif
           break;
         case VARVAL_EXTRUDERS_TEMP_SAVE:
-          readParam_ExtrudersTemp();
+          dwin_read_extruders_temp();
           lcd_save_settings();
           #if FYSTLCD_PAGE_EXIST(SETTING)
             lcd_set_page(FTPAGE(SETTING));
@@ -2384,7 +3392,7 @@ static void dwin_on_cmd(millis_t& tNow) {
       filament_temp_preheat();
     }
 
-    sendActiveExtrudersParam();
+    dwin_write_extruders_para();
     break;
 
   case VARADDR_TUNE_PREHEAT_CUSTOM_BED:
@@ -2395,7 +3403,7 @@ static void dwin_on_cmd(millis_t& tNow) {
       filament_temp_preheat(true);
     }
 
-    sendActiveExtrudersParam();
+    dwin_write_extruders_para();
     break;
 
   case VARADDR_TUNE_PREHEAT_HOTEND_TEMP:
@@ -2624,1043 +3632,6 @@ static void lcd_period_report(int16_t s) {
     }
     
   #endif
-}
-
-static void sendActiveExtrudersParam() {
-  myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDER_PARAM);
-  //int n = active_extruder;
-  myFysTLcd.ftCmdPut16(0);
-  myFysTLcd.ftCmdPut16(thermalManager.target_temperature[0]);
-  myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, 0));
-  myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, 0)));
-  myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, 0)));
-  #if ENABLED(PID_EXTRUSION_SCALING)
-    myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, 0));
-  #else
-    myFysTLcd.ftCmdJump(4);
-  #endif
-  
-  #if HAS_TEMP_BED
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature_bed);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-  myFysTLcd.ftCmdSend();
-
-  #if EXTRUDERS == 2
-    myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDERS_PARAM);
-    myFysTLcd.ftCmdPut16(1);
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[1]);
-    myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, 1));
-    myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, 1)));
-    myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, 1)));
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, 1));
-    #else
-      myFysTLcd.ftCmdJump(4);
-    #endif
-
-    myFysTLcd.ftCmdSend();
-  #endif
-}
-
-static void readActiveExtrudersParam() {
-  myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDER_PARAM);
-  if (myFysTLcd.ftCmdReceive(22)) {
-    myFysTLcd.ftCmdJump(2);// ignore hotend number
-    int16_t t;
-    myFysTLcd.ftCmdGetI16(t);
-    myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, 0));
-    myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, 0));
-    PID_PARAM(Ki, 0) = scalePID_i(PID_PARAM(Ki, 0));
-    myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, 0));
-    PID_PARAM(Kd, 0) = scalePID_d(PID_PARAM(Kd, 0));
-    #if ENABLED(PID_EXTRUSION_SCALING)
-      myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, 0));
-    #else
-      myFysTLcd.ftCmdJump(4);
-    #endif
-    thermalManager.setTargetHotend(t, 0);
-
-    #if HAS_TEMP_BED
-      myFysTLcd.ftCmdGetI16(t);
-      thermalManager.setTargetBed(t);
-    #endif
-  }
-
-  #if EXTRUDERS == 2
-
-    myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDERS_PARAM);
-    if (myFysTLcd.ftCmdReceive(20)) {
-      myFysTLcd.ftCmdJump(2);// ignore hotend number
-      int16_t t;
-      myFysTLcd.ftCmdGetI16(t);
-      myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, 1));
-      myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, 1));
-      PID_PARAM(Ki, 1) = scalePID_i(PID_PARAM(Ki, 1));
-      myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, 1));
-      PID_PARAM(Kd, 1) = scalePID_d(PID_PARAM(Kd, 1));
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, 1));
-      #else
-        myFysTLcd.ftCmdJump(4);
-      #endif
-      thermalManager.setTargetHotend(t, 1);
-    }
-  
-  #endif
-}
-
-static void sendParam_Tune(){
-  uint8_t e;
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE);
-  #if HAS_TEMP_ADC_0
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[0]);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-  #if HAS_TEMP_ADC_1
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[1]);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-  #if HAS_TEMP_ADC_2
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[2]);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-  #if HAS_TEMP_ADC_3
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[3]);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-  #if HAS_TEMP_ADC_4
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature[4]);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-  #if HAS_TEMP_BED
-    myFysTLcd.ftCmdPut16(thermalManager.target_temperature_bed);
-  #else
-    myFysTLcd.ftCmdJump(2);
-  #endif
-
-  // VARADDR_PARAM_TUNE + 0x06
-  #if FAN_COUNT > 0
-    for(e=0; e<FAN_COUNT; e++) myFysTLcd.ftCmdPut16(fanSpeeds[e]);
-    for (; e<5; e++) myFysTLcd.ftCmdJump(2);
-  #else
-    myFysTLcd.ftCmdJump(10);
-  #endif
-
-  // VARADDR_PARAM_TUNE + 0x0b
-  myFysTLcd.ftCmdPut16(feedrate_percentage);
-  for (e = 0; e < EXTRUDERS; e++) {
-    myFysTLcd.ftCmdPut16(planner.flow_percentage[e]); 
-  }
-  for (; e < 5; e++) myFysTLcd.ftCmdJump(2);
-  
-  myFysTLcd.ftCmdSend();
-}
-
-static void readParam_Tune()
-{
-    int16_t t;
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE);
-    if (myFysTLcd.ftCmdReceive(32)) {
-      #if HAS_TEMP_ADC_0
-        myFysTLcd.ftCmdGetI16(t);
-        thermalManager.setTargetHotend(t, 0);
-      #else
-        myFysTLcd.ftCmdJump(2);
-      #endif
-      #if HAS_TEMP_ADC_1
-        myFysTLcd.ftCmdGetI16(t);
-        thermalManager.setTargetHotend(t, 1);
-      #else
-        myFysTLcd.ftCmdJump(2);
-      #endif
-      #if HAS_TEMP_ADC_2
-        myFysTLcd.ftCmdGetI16(t);
-        thermalManager.setTargetHotend(t,2);
-      #else
-        myFysTLcd.ftCmdJump(2);
-      #endif
-      #if HAS_TEMP_ADC_3
-        myFysTLcd.ftCmdGetI16(t);
-        thermalManager.setTargetHotend(t,3);
-      #else
-        myFysTLcd.ftCmdJump(2);
-      #endif
-      #if HAS_TEMP_ADC_4
-        myFysTLcd.ftCmdGetI16(t);
-        thermalManager.setTargetHotend(t, 4);
-      #else
-        myFysTLcd.ftCmdJump(2);
-      #endif
-      #if HAS_TEMP_BED
-        myFysTLcd.ftCmdGetI16(t);
-        thermalManager.setTargetBed(t);
-      #else
-        myFysTLcd.ftCmdJump(2);
-      #endif
-
-      uint8_t e;
-      #if FAN_COUNT > 0
-        for (e = 0; e<FAN_COUNT; e++) myFysTLcd.ftCmdGetI16(fanSpeeds[e]);
-        for (; e<5; e++) myFysTLcd.ftCmdJump(2);
-      #else
-        myFysTLcd.ftCmdJump(10);
-      #endif
-      
-      myFysTLcd.ftCmdGetI16(feedrate_percentage);
-      for (e = 0; e < EXTRUDERS; e++) {         
-		    myFysTLcd.ftCmdGetI16(planner.flow_percentage[e]);
-		    planner.refresh_e_factor(e);
-      }
-      for (; e<5; e++)myFysTLcd.ftCmdJump(2);		
-    }
-}
-
-static void sendParam_Tune_fan(){
-  uint8_t e;
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE+6);  
-  // VARADDR_PARAM_TUNE + 6
-  #if FAN_COUNT > 0
-    for(e=0;e<FAN_COUNT;e++) {
-      myFysTLcd.ftCmdPut16(fanSpeeds[e]);
-    }
-    for (; e<5; e++)myFysTLcd.ftCmdJump(2);
-  #else
-    myFysTLcd.ftCmdJump(10);
-  #endif
-
-  myFysTLcd.ftCmdSend();
-}
-
-static void readParam_Tune_fan()
-{
-    int16_t t;
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_TUNE+6);
-    if (myFysTLcd.ftCmdReceive(10)) {      
-      uint8_t e;
-      #if FAN_COUNT > 0
-        for (e = 0; e<FAN_COUNT; e++) myFysTLcd.ftCmdGetI16(fanSpeeds[e]);
-        for (; e<5; e++) myFysTLcd.ftCmdJump(2);
-      #else
-        myFysTLcd.ftCmdJump(10);
-      #endif	
-    }
-}
-
-static void sendParam_Motor() {    
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_MOTOR);
-  for (uint8_t i = 0; i < 4; i++)
-  {
-      myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[i]);
-  }
-  for (uint8_t i = 0; i < 4; i++)
-  {
-      myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[i]);
-  }
-  myFysTLcd.ftCmdSend();
-
-  for (uint8_t i = 0; i < 4; i++)
-  {
-      myFysTLcd.ftCmdPutI32((int32_t)planner.max_acceleration_mm_per_s2[i]);
-  }
-  myFysTLcd.ftCmdPutF32(planner.acceleration);
-  myFysTLcd.ftCmdPutF32(planner.retract_acceleration);
-  myFysTLcd.ftCmdPutF32(planner.travel_acceleration);
-  myFysTLcd.ftCmdPutF32(planner.min_feedrate_mm_s);
-  myFysTLcd.ftCmdSend();
-
-  //myFysTLcd.ftCmdPutI32((int32_t)planner.min_segment_time);
-  myFysTLcd.ftCmdPutI32((int32_t)planner.min_segment_time_us);
-  myFysTLcd.ftCmdPutF32(planner.min_travel_feedrate_mm_s);
-  for(uint8_t i=0;i<4;i++)
-  {
-      myFysTLcd.ftCmdPutF32(planner.max_jerk[i]);
-  }
-  myFysTLcd.ftCmdSend();
-
-#if HAS_HOME_OFFSET
-  #if ENABLED(DELTA)
-  myFysTLcd.ftCmdJump(8);
-  float f=DELTA_HEIGHT + home_offset[Z_AXIS];
-  myFysTLcd.ftCmdPutF32(f);
-  #else
-  for(uint8_t i=0;i<3;i++)
-  {
-      myFysTLcd.ftCmdPutF32(home_offset[i]);
-  }
-  #endif
-#else
-  myFysTLcd.ftCmdJump(12);
-#endif
-#if HAS_MOTOR_CURRENT_PWM
-  for (uint8_t q = 0; q<3;q++)
-  {
-      myFysTLcd.ftCmdPutI32((int32_t)stepper.motor_current_setting[q]);
-  }
-  myFysTLcd.ftCmdPutI32(MOTOR_CURRENT_PWM_RANGE);
-#else
-  myFysTLcd.ftCmdJump(16);
-#endif
-  myFysTLcd.ftCmdSend();
-}
-static void readParam_Motor() {   
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_MOTOR);
-  if (myFysTLcd.ftCmdReceive(32))
-  {
-      for (uint8_t i = 0; i < 4; i++)
-      {
-          myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[i]);
-      }
-			planner.refresh_positioning(); // geo-f:20180726
-      for (uint8_t i = 0; i < 4; i++)
-      {
-          myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[i]);
-      }
-  }
-  myFysTLcd.ftCmdClear();
-  if (myFysTLcd.ftCmdReceive(32))
-  {
-      int32_t t;
-      for (uint8_t i = 0; i < 4; i++)
-      {
-          myFysTLcd.ftCmdGetI32(t);
-          planner.max_acceleration_mm_per_s2[i] = t;
-      }
-      myFysTLcd.ftCmdGetF32(planner.acceleration);
-      myFysTLcd.ftCmdGetF32(planner.retract_acceleration);
-      myFysTLcd.ftCmdGetF32(planner.travel_acceleration);
-      myFysTLcd.ftCmdGetF32(planner.min_feedrate_mm_s);
-  }
-  myFysTLcd.ftCmdClear();
-  if (myFysTLcd.ftCmdReceive(24))
-  {
-      int32_t t;
-      myFysTLcd.ftCmdGetI32(t);
-      //planner.min_segment_time = t;
-      planner.min_segment_time_us = t; 
-      myFysTLcd.ftCmdGetF32(planner.min_travel_feedrate_mm_s);
-      myFysTLcd.ftCmdGetF32(planner.max_jerk[X_AXIS]);
-      myFysTLcd.ftCmdGetF32(planner.max_jerk[Y_AXIS]);
-      myFysTLcd.ftCmdGetF32(planner.max_jerk[Z_AXIS]);
-      myFysTLcd.ftCmdGetF32(planner.max_jerk[E_AXIS]);
-  }
-  myFysTLcd.ftCmdClear();
-  if (myFysTLcd.ftCmdReceive(24))
-  {
-#if HAS_HOME_OFFSET
-  #if ENABLED(DELTA)
-      myFysTLcd.ftCmdJump(8);
-      myFysTLcd.ftCmdGetF32(home_offset[Z_AXIS]);
-      home_offset[Z_AXIS] -= DELTA_HEIGHT;
-  #else
-      for (uint8_t i = 0; i < 3; i++)
-      {
-          myFysTLcd.ftCmdGetF32(home_offset[i]);
-      }
-  #endif
-#else
-      myFysTLcd.ftCmdJump(12);
-#endif
-#if HAS_MOTOR_CURRENT_PWM
-      int32_t t;
-      for (uint8_t q = 0; q<3; q++)
-      {
-          myFysTLcd.ftCmdGetI32(t);
-          stepper.motor_current_setting[q]=t;
-      }
-#else
-      myFysTLcd.ftCmdJump(12);
-#endif
-  }
-}
-
-#if HOTENDS > 1
-static void sendParam_ExtrudersOffset() {
-  uint8_t e;
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_OFFSET);
-  #if EXTRUDERS==5
-    for (e = 1; e < 4; e++)
-    {
-        for (uint8_t axis = 0; axis < 3; axis++)
-        {
-            myFysTLcd.ftCmdPutF32(hotend_offset[axis][e]);
-        }
-    }
-    myFysTLcd.ftCmdSend(); 
-    for (uint8_t axis = 0; axis < 3; axis++)
-    {
-        myFysTLcd.ftCmdPutF32(hotend_offset[axis][4]);
-    }
-    myFysTLcd.ftCmdSend(); 
-  #else
-    for (e = 1; e < EXTRUDERS; e++)
-    {
-        for (uint8_t axis = 0; axis < 3; axis++)
-        {
-            myFysTLcd.ftCmdPutF32(hotend_offset[axis][e]);
-        }
-    }
-    myFysTLcd.ftCmdSend();
-  #endif
-}
-static void readParam_ExtrudersOffset()
-{
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_OFFSET);
-  #if EXTRUDERS==5
-    if (myFysTLcd.ftCmdReceive(36))
-    {
-        for (uint8_t e = 1; e < 4; e++)
-        for (uint8_t axis = 0; axis < 3; axis++)
-        {
-            myFysTLcd.ftCmdGetF32(hotend_offset[axis][e]);
-        }
-    }
-    myFysTLcd.ftCmdClear();
-    if (myFysTLcd.ftCmdReceive(12))
-    {
-        for (uint8_t axis = 0; axis < 3; axis++)
-        {
-            myFysTLcd.ftCmdGetF32(hotend_offset[axis][4]);
-        }
-    }
-  #else
-    if (myFysTLcd.ftCmdReceive((EXTRUDERS - 1) * 12))
-    {
-        for (uint8_t e = 1; e < EXTRUDERS; e++)
-        for (uint8_t axis = 0; axis < 3; axis++)
-        {
-            myFysTLcd.ftCmdGetF32(hotend_offset[axis][e]);
-        }
-    }
-  #endif
-}
-static void sendParam_ExtrudersMotor()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_MOTOR);
-#if EXTRUDERS==5
-    for (uint8_t e = 1; e < 4; e++)
-    {
-        myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[3 + e]);
-        myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[3 + e]);
-        myFysTLcd.ftCmdPutF32(planner.max_acceleration_mm_per_s2[3 + e]);
-    }
-    myFysTLcd.ftCmdSend();
-    myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[7]);
-    myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[7]);
-    myFysTLcd.ftCmdPutF32(planner.max_acceleration_mm_per_s2[7]);
-    myFysTLcd.ftCmdSend();
-#else
-    for (uint8_t e = 1; e < EXTRUDERS; e++)
-    {
-        myFysTLcd.ftCmdPutF32(planner.axis_steps_per_mm[3 + e]);
-        myFysTLcd.ftCmdPutF32(planner.max_feedrate_mm_s[3 + e]);
-        myFysTLcd.ftCmdPutF32(planner.max_acceleration_mm_per_s2[3 + e]);
-    }
-    myFysTLcd.ftCmdSend();
-#endif
-}
-static void readParam_ExtrudersMotor()
-{
-    int32_t t;
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_MOTOR);
-#if EXTRUDERS==5
-    if (myFysTLcd.ftCmdReceive(36))
-    {
-        for (uint8_t e = 1; e < 4; e++)
-        {
-            myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[3 + e]);
-            myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[3 + e]);
-            myFysTLcd.ftCmdGetI32(t);
-            planner.max_acceleration_mm_per_s2[3 + e] = t;
-        }
-    }
-    myFysTLcd.ftCmdClear();
-    if (myFysTLcd.ftCmdReceive(12))
-    {
-        myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[7]);
-        myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[7]);
-        myFysTLcd.ftCmdGetI32(t);
-        planner.max_acceleration_mm_per_s2[7] = t;
-    }
-#else
-    if (myFysTLcd.ftCmdReceive((EXTRUDERS - 1) * 12))
-    {
-        for (uint8_t e = 1; e < EXTRUDERS; e++)
-        {
-            myFysTLcd.ftCmdGetF32(planner.axis_steps_per_mm[3 + e]);
-            myFysTLcd.ftCmdGetF32(planner.max_feedrate_mm_s[3 + e]);
-            myFysTLcd.ftCmdGetI32(t);
-            planner.max_acceleration_mm_per_s2[3 + e] = t;
-        }
-    }
-#endif
-}
-static void sendParam_ExtrudersTemp() {
-  uint8_t e;
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_TEMP);
-  #if EXTRUDERS>3
-    for (e = 1; e < 3; e++) {
-      myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, e));
-      myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, e)));
-      myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, e)));
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, e));
-      #else
-        myFysTLcd.ftCmdJump(4);
-      #endif
-    }
-    myFysTLcd.ftCmdSend();
-    for (; e < EXTRUDERS; e++) {
-      myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, e));
-      myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, e)));
-      myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, e)));
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, e));
-      #else
-        myFysTLcd.ftCmdJump(4);
-      #endif
-    }
-    myFysTLcd.ftCmdSend();
-  #else
-    for (e = 1; e < EXTRUDERS; e++)
-    {
-        myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, e));
-        myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, e)));
-        myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, e)));
-        #if ENABLED(PID_EXTRUSION_SCALING)
-        myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, e));
-        #else
-        myFysTLcd.ftCmdJump(4);
-        #endif
-    }
-    myFysTLcd.ftCmdSend();
-  #endif
-}
-static void readParam_ExtrudersTemp()
-{
-  uint8_t e;
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_EXTRUDERS_TEMP);
-  #if EXTRUDERS>3
-    if (myFysTLcd.ftCmdReceive(32)) {
-        for (e = 1; e < 3; e++)
-        {
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, e));
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, e));
-            PID_PARAM(Ki, e) = scalePID_i(PID_PARAM(Ki, e));
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, e));
-            PID_PARAM(Kd, e) = scalePID_d(PID_PARAM(Kd, e));
-        #if ENABLED(PID_EXTRUSION_SCALING)
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, e));
-        #else
-            myFysTLcd.ftCmdJump(4);
-        #endif
-        }
-    }
-    myFysTLcd.ftCmdClear();
-    if (myFysTLcd.ftCmdReceive(32))
-    {
-        for (; e < EXTRUDERS; e++)
-        {
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, e));
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, e));
-            PID_PARAM(Ki, e) = scalePID_i(PID_PARAM(Ki, e));
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, e));
-            PID_PARAM(Kd, e) = scalePID_d(PID_PARAM(Kd, e));
-        #if ENABLED(PID_EXTRUSION_SCALING)
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, e));
-        #else
-            myFysTLcd.ftCmdJump(4);
-        #endif
-        }
-    }
-  #else
-    if (myFysTLcd.ftCmdReceive(16*(EXTRUDERS-1)))
-    {
-        for (e = 1; e < EXTRUDERS; e++)
-        {
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, e));
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, e));
-            PID_PARAM(Ki, e) = scalePID_i(PID_PARAM(Ki, e));
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, e));
-            PID_PARAM(Kd, e) = scalePID_d(PID_PARAM(Kd, e));
-        #if ENABLED(PID_EXTRUSION_SCALING)
-            myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, e));
-        #else
-            myFysTLcd.ftCmdJump(4);
-        #endif
-        }
-    }
-  #endif
-}
-#endif
-
-static void sendParam_Leveling() {
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
-  // Global Leveling
-  #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-    myFysTLcd.ftCmdPutF32(planner.z_fade_height);
-  #else
-    myFysTLcd.ftCmdJump(4);
-  #endif
-
-  // Planar Bed Leveling matrix
-  #if ABL_PLANAR
-    for (char i = 0; i < 9; i++) {
-      myFysTLcd.ftCmdPutF32(planner.bed_level_matrix.matrix[i]);
-    }
-  #else
-    myFysTLcd.ftCmdJump(36);
-  #endif
-
-  myFysTLcd.ftCmdSend();
-}
-
-static void readParam_Leveling() {
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_LEVELING);
-  if (myFysTLcd.ftCmdReceive(4)) {
-    // Global Leveling
-    #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-      myFysTLcd.ftCmdGetF32(planner.z_fade_height);
-    #endif
-  }
-  if (myFysTLcd.ftCmdReceive(36)) {
-    // Planar Bed Leveling matrix
-    #if ABL_PLANAR
-      for (char i = 0; i < 9; i++) {
-        myFysTLcd.ftCmdGetF32(planner.bed_level_matrix.matrix[i]);
-      }
-    #endif
-  }
-}
-
-static void sendParam_zoffset() {
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
-  #if HAS_BED_PROBE
-    myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
-  #endif
-  myFysTLcd.ftCmdSend();
-}
-
-static void readParam_zoffset() {
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
-  if (myFysTLcd.ftCmdReceive(2)) {
-    #if HAS_BED_PROBE
-      myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
-    #endif
-  }
-}
-
-static void sendParam_Temp() {
-  myFysTLcd.ftCmdStart(VARADDR_PARAM_TEMP);
-  #if ENABLED(PIDTEMP)
-    myFysTLcd.ftCmdPutF32(PID_PARAM(Kp, 0));
-    myFysTLcd.ftCmdPutF32(unscalePID_i(PID_PARAM(Ki, 0)));
-    myFysTLcd.ftCmdPutF32(unscalePID_d(PID_PARAM(Kd, 0)));
-    #if ENABLED(PID_EXTRUSION_SCALING)
-    myFysTLcd.ftCmdPutF32(PID_PARAM(Kc, 0));
-    #else
-    myFysTLcd.ftCmdJump(4);
-    #endif
-  #else
-    myFysTLcd.ftCmdJump(16);
-  #endif //!PIDTEMP
-    myFysTLcd.ftCmdSend();
-
-  #if DISABLED(PIDTEMPBED)
-    myFysTLcd.ftCmdJump(16);
-  #else
-    myFysTLcd.ftCmdPutF32(thermalManager.bedKp);
-    myFysTLcd.ftCmdPutF32(unscalePID_i(thermalManager.bedKi));
-    myFysTLcd.ftCmdPutF32(unscalePID_d(thermalManager.bedKd));
-    myFysTLcd.ftCmdJump(4);
-  #endif
-  myFysTLcd.ftCmdSend();
-}
-static void readParam_Temp()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_TEMP);
-    if (myFysTLcd.ftCmdReceive(32)) {
-      #if ENABLED(PIDTEMP)
-        myFysTLcd.ftCmdGetF32(PID_PARAM(Kp, 0));
-        myFysTLcd.ftCmdGetF32(PID_PARAM(Ki, 0));
-        PID_PARAM(Ki, 0) = scalePID_i(PID_PARAM(Ki, 0));
-        myFysTLcd.ftCmdGetF32(PID_PARAM(Kd, 0));
-        PID_PARAM(Kd, 0) = scalePID_d(PID_PARAM(Kd, 0));
-        #if ENABLED(PID_EXTRUSION_SCALING)
-          myFysTLcd.ftCmdGetF32(PID_PARAM(Kc, 0));
-        #else
-          myFysTLcd.ftCmdJump(4);
-        #endif
-        thermalManager.update_pid();
-      #else
-        myFysTLcd.ftCmdJump(16);
-      #endif //!PIDTEMP
-
-      #if DISABLED(PIDTEMPBED)
-        myFysTLcd.ftCmdJump(16);
-      #else
-        myFysTLcd.ftCmdGetF32(thermalManager.bedKp);
-        myFysTLcd.ftCmdGetF32(thermalManager.bedKi);
-        thermalManager.bedKi = scalePID_i(thermalManager.bedKi);
-        myFysTLcd.ftCmdGetF32(thermalManager.bedKd);
-        thermalManager.bedKd = scalePID_d(thermalManager.bedKd);
-        myFysTLcd.ftCmdJump(4);
-      #endif
-    }
-    myFysTLcd.ftCmdClear();
-}
-
-static void sendParam_Material()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_MATERIAL);
-#if ENABLED(FWRETRACT)
-    myFysTLcd.ftCmdPut16(autoretract_enabled);
-    myFysTLcd.ftCmdPutF32(retract_length);
-    #if EXTRUDERS > 1
-    myFysTLcd.ftCmdPutF32(retract_length_swap);
-    #else
-    myFysTLcd.ftCmdJump(4);
-    #endif
-    myFysTLcd.ftCmdPutF32(retract_feedrate_mm_s);
-    myFysTLcd.ftCmdPutF32(retract_zlift);
-    myFysTLcd.ftCmdPutF32(retract_recover_length);
-    #if EXTRUDERS > 1
-    myFysTLcd.ftCmdPutF32(retract_recover_length_swap);
-    #else
-    myFysTLcd.ftCmdJump(4);
-    #endif
-    myFysTLcd.ftCmdPutF32(retract_recover_feedrate_mm_s);
-#else
-    myFysTLcd.ftCmdJump(30);
-#endif // FWRETRACT
-    //myFysTLcd.ftCmdPut16(volumetric_enabled); 
-	myFysTLcd.ftCmdPut16(parser.volumetric_enabled);
-    myFysTLcd.ftCmdSend();
-
-    uint8_t e;
-    //for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdPutF32(filament_size[e]); 
-    for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdPutF32(planner.filament_size[e]); 
-    for (; e < 5; e++)myFysTLcd.ftCmdJump(4);
-
-// Linear Advance
-#if ENABLED(LIN_ADVANCE)
-    myFysTLcd.ftCmdPutF32(planner.extruder_advance_k);
-    myFysTLcd.ftCmdPutF32(planner.advance_ed_ratio);
-#else
-    myFysTLcd.ftCmdJump(8);
-#endif
-    myFysTLcd.ftCmdSend();
-}
-static void readParam_Material()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_MATERIAL);
-    if(myFysTLcd.ftCmdReceive(32))
-    {
-        int16_t t;
-    #if ENABLED(FWRETRACT)
-        myFysTLcd.ftCmdGetI16(t);
-        autoretract_enabled=t;
-        myFysTLcd.ftCmdGetF32(retract_length);
-        #if EXTRUDERS > 1
-        myFysTLcd.ftCmdGetF32(retract_length_swap);
-        #else
-        myFysTLcd.ftCmdJump(4);
-        #endif
-        myFysTLcd.ftCmdGetF32(retract_feedrate_mm_s);
-        myFysTLcd.ftCmdGetF32(retract_zlift);
-        myFysTLcd.ftCmdGetF32(retract_recover_length);
-        #if EXTRUDERS > 1
-        myFysTLcd.ftCmdGetF32(retract_recover_length_swap);
-        #else
-        myFysTLcd.ftCmdJump(4);
-        #endif
-        myFysTLcd.ftCmdGetF32(retract_recover_feedrate_mm_s);
-    #else
-        myFysTLcd.ftCmdJump(30);
-    #endif // FWRETRACT
-        myFysTLcd.ftCmdGetI16(t);
-        //volumetric_enabled = t; 
-        parser.volumetric_enabled = t;
-    }
-    myFysTLcd.ftCmdClear();
-    if(myFysTLcd.ftCmdReceive(28))
-    {
-        uint8_t e;
-        //for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdGetF32(filament_size[e]);
-        for (e = 0; e<EXTRUDERS; e++)myFysTLcd.ftCmdGetF32(planner.filament_size[e]);
-        for (; e < 5; e++)myFysTLcd.ftCmdJump(4);
-        // Linear Advance
-    #if ENABLED(LIN_ADVANCE)
-        myFysTLcd.ftCmdGetF32(planner.extruder_advance_k);
-        myFysTLcd.ftCmdGetF32(planner.advance_ed_ratio);
-    #endif
-    }
-}
-
-static void sendParam_TMC2130()
-{
-    int16_t t;
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_TMC2130);
-#if ENABLED(HAVE_TMC2130)
-    #if ENABLED(X_IS_TMC2130)
-    t = stepperX.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Y_IS_TMC2130)
-    t=stepperY.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Z_IS_TMC2130)
-    t=stepperZ.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E0_IS_TMC2130)
-    t=stepperE0.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(X2_IS_TMC2130)
-    t=stepperX2.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Y2_IS_TMC2130)
-    t=stepperY2.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Z2_IS_TMC2130)
-    t=stepperZ2.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E1_IS_TMC2130)
-    t=stepperE1.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E2_IS_TMC2130)
-    t=stepperE2.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E3_IS_TMC2130)
-    t=stepperE3.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E4_IS_TMC2130)
-    t=stepperE4.getCurrent();
-    myFysTLcd.ftCmdPut16(t);
-    #else
-    myFysTLcd.ftCmdJump(2);
-    #endif
-#else
-    myFysTLcd.ftCmdJump(22);
-#endif
-    myFysTLcd.ftCmdSend();
-}
-static void readParam_TMC2130()
-{
-    int16_t t;
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_TMC2130);
-    if (myFysTLcd.ftCmdReceive(22))
-    {
-	#if ENABLED(HAVE_TMC2130)
-    #if ENABLED(X_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperX.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Y_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperY.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Z_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperZ.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(X2_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperX2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Y2_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t)
-        stepperY2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(Z2_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperZ2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E0_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperE0.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E1_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperE1.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E2_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperE2.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E3_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperE3.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-    #if ENABLED(E4_IS_TMC2130)
-        myFysTLcd.ftCmdGetI16(t);
-        stepperE4.setCurrent(t, R_SENSE, HOLD_MULTIPLIER);
-    #else
-        myFysTLcd.ftCmdJump(2);
-    #endif
-#else
-        myFysTLcd.ftCmdJump(22);
-#endif
-    }
-}
-
-static void sendParam_system()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_SYSTEM);
-#ifdef FYS_ENERGY_CONSERVE_HEIGHT
-    myFysTLcd.ftCmdPutF16(zEnergyHeight);
-#else
-    myFysTLcd.ftCmdJump(2);
-#endif
-
-#if PIN_EXISTS(PS_ON)&&defined(FYS_ACTIVE_TIME_OVER)
-    int16_t t=max_inactive_time/1000UL;
-    myFysTLcd.ftCmdPut16(t);
-#else
-    myFysTLcd.ftCmdJump(2);
-#endif
-    myFysTLcd.ftCmdSend();
-}
-static void readParam_system()
-{
-    myFysTLcd.ftCmdStart(VARADDR_PARAM_SYSTEM);
-    if (myFysTLcd.ftCmdReceive(4))
-    {
-      #ifdef FYS_ENERGY_CONSERVE_HEIGHT
-        myFysTLcd.ftCmdGetF16(zEnergyHeight);
-#else
-        myFysTLcd.ftCmdJump(2);
-#endif
-#if PIN_EXISTS(PS_ON)&&defined(FYS_ACTIVE_TIME_OVER)
-        int16_t t;
-        myFysTLcd.ftCmdGetI16(t);
-        max_inactive_time = (millis_t)t* 1000UL;
-#else
-        myFysTLcd.ftCmdJump(2);
-#endif
-    }
-}
-
-void dwin_popup(const char* msg, EM_POPUP_PAGE_TYPE pageChoose, char funid)
-{
-    char str[INFO_POPUP_LEN + 1], i, j, ch;
-    if (msg)
-    for (j = 0; j < INFOS_NUM; j++) {
-      memset(str, 0, INFO_POPUP_LEN);
-      i = 0;
-      while (ch = pgm_read_byte(msg)) {
-        if (ch == '\n') {
-            msg++;
-            break;
-        }
-        str[i++] = ch;
-        msg++;
-        if (i >= INFO_POPUP_LEN)break;
-      }
-      touch_lcd::ftPuts(VARADDR_POP_INFOS[j], str, INFO_POPUP_LEN);
-    }
-    
-    switch (pageChoose) {
-      case EPPT_INFO_POPUP:
-        #if FYSTLCD_PAGE_EXIST(INFO_POPUP)
-          lcd_pop_page(FTPAGE(INFO_POPUP));
-        #endif
-        break;
-      case EPPT_INFO_WAITING:
-        #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
-          lcd_pop_page(FTPAGE(INFO_WAITING));
-        #endif
-        break;
-      case EPPT_INFO_OPTION:
-        switch (funid) {
-          #if ENABLED(ADVANCED_PAUSE_FEATURE)
-            case 1:
-                optionId = 1;
-                advanced_pause_menu_response = ADVANCED_PAUSE_RESPONSE_WAIT_FOR;
-                touch_lcd::ftPutsPGM(VARADDR_QUESTION_LEFT, PSTR("Resume"),8);
-                touch_lcd::ftPutsPGM(VARADDR_QUESTION_RIGHT, PSTR("Extrude"),8);
-                break;
-          #endif
-          default:
-              break;
-        }
-        #if FYSTLCD_PAGE_EXIST(INFO_OPTION)
-          lcd_pop_page(FTPAGE(INFO_OPTION));
-        #endif
-        break;
-      default:
-          break;
-    }
-}
-
-void dwin_popup_shutdown() {
-  if (
-      #if FYSTLCD_PAGE_EXIST(INFO_POPUP)
-        currentPageId == FTPAGE(INFO_POPUP) || 
-      #endif
-      #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
-        currentPageId == FTPAGE(INFO_WAITING) ||
-      #endif
-      #if FYSTLCD_PAGE_EXIST(INFO_OPTION)
-        currentPageId == FTPAGE(INFO_OPTION) ||
-      #endif
-      0) {
-    lcd_pop_page(retPageId);
-  }
 }
 
 // Update the status page data 
