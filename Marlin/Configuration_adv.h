@@ -807,6 +807,7 @@
  */
 #define BABYSTEPPING
 #if ENABLED(BABYSTEPPING)
+  #define BABYSTEP_WITHOUT_HOMING
   //#define BABYSTEP_XY              // Also enable X/Y Babystepping. Not supported on DELTA!
   #define BABYSTEP_INVERT_Z false    // Change if Z babysteps should go the other way
   #define BABYSTEP_MULTIPLICATOR 1   // Babysteps are very small. Increase for faster motion.
@@ -1027,6 +1028,7 @@
  *   'M106 P<fan> T2'     : Use the set secondary speed
  *   'M106 P<fan> T1'     : Restore the previous fan speed
  */
+ #define DUAL_FAN_CONTROL
 //#define EXTRA_FAN_SPEED
 
 /**
@@ -1166,7 +1168,7 @@
   #define X_CURRENT          800  // rms current in mA. Multiply by 1.41 for peak current.
   #define X_MICROSTEPS        16  // 0..256
 
-  #define Y_CURRENT          800
+  #define Y_CURRENT          700
   #define Y_MICROSTEPS        16
 
   #define Z_CURRENT          800
@@ -1181,7 +1183,7 @@
   #define Z2_CURRENT         800
   #define Z2_MICROSTEPS       16
 
-  #define E0_CURRENT         700
+  #define E0_CURRENT         500
   #define E0_MICROSTEPS       16
 
   #define E1_CURRENT         800
@@ -1275,7 +1277,7 @@
    * Enable M122 debugging command for TMC stepper drivers.
    * M122 S0/1 will enable continous reporting.
    */
-  //#define TMC_DEBUG
+  #define TMC_DEBUG
 
   /**
    * M915 Z Axis Calibration
