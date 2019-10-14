@@ -1758,7 +1758,7 @@ static inline void lcd_pid_autotune_bed() {
 
 #endif // BABYSTEPPING
 
-static void moveAxis(AxisEnum axis, float val) {
+static void move_axis(AxisEnum axis, float val) {
 		if(planner.movesplanned()!=0) return;
 
     if(axis==E_AXIS) {           
@@ -1802,7 +1802,7 @@ static void moveAxis(AxisEnum axis, float val) {
     planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], move_feedrate>0.0 ? move_feedrate : pgm_read_float(&homing_feedrate_mm_s[axis]), active_extruder);
 }
 
-static void manualLevelingMove(float x, float y) {
+static void manual_leveling_move(float x, float y) {
   current_position[Z_AXIS] = Z_CLEARANCE_DEPLOY_PROBE;
   planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], MMM_TO_MMS(HOMING_FEEDRATE_Z), active_extruder);
   current_position[X_AXIS] = x;
@@ -2029,7 +2029,7 @@ void lcd_showFilename() {
   #endif
 }
 
-static void reportCmdContent(uint16_t& tar) {
+static void report_commands(uint16_t& tar) {
   for (uint8_t i = 0; i<4; i++) {
     char c = (tar >> ((3 - i) << 2)) & 0x0F;
     if (c > 9)MYSERIAL0.write(c - 10 + 'A');
@@ -2436,94 +2436,94 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       break;                        
 
     case VARVAL_TOOL_LEFTMOVE_X_0_1:
-     	moveAxis(X_AXIS, -0.1);
+     	move_axis(X_AXIS, -0.1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_X_0_1:
-     	moveAxis(X_AXIS, 0.1);
+     	move_axis(X_AXIS, 0.1);
       break;
     case VARVAL_TOOL_LEFTMOVE_Y_0_1:
-      moveAxis(Y_AXIS, -0.1);
+      move_axis(Y_AXIS, -0.1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_Y_0_1:
-      moveAxis(Y_AXIS, 0.1);
+      move_axis(Y_AXIS, 0.1);
       break;
     case VARVAL_TOOL_LEFTMOVE_Z_0_1:
-      moveAxis(Z_AXIS, -0.1);
+      move_axis(Z_AXIS, -0.1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_Z_0_1:
-      moveAxis(Z_AXIS, 0.1);
+      move_axis(Z_AXIS, 0.1);
       break;
     case VARVAL_TOOL_LEFTMOVE_E_0_1:
-     	moveAxis(E_AXIS, -0.1);
+     	move_axis(E_AXIS, -0.1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_E_0_1:
-      moveAxis(E_AXIS, 0.1);
+      move_axis(E_AXIS, 0.1);
       break;
     case VARVAL_TOOL_LEFTMOVE_X_1:
-     	moveAxis(X_AXIS, -1);
+     	move_axis(X_AXIS, -1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_X_1:
-     	moveAxis(X_AXIS, 1);
+     	move_axis(X_AXIS, 1);
       break;
     case VARVAL_TOOL_LEFTMOVE_Y_1:
-      moveAxis(Y_AXIS, -1);
+      move_axis(Y_AXIS, -1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_Y_1:
-      moveAxis(Y_AXIS, 1);
+      move_axis(Y_AXIS, 1);
       break;
     case VARVAL_TOOL_LEFTMOVE_Z_1:
-      moveAxis(Z_AXIS, -1);
+      move_axis(Z_AXIS, -1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_Z_1:
-      moveAxis(Z_AXIS, 1);
+      move_axis(Z_AXIS, 1);
       break;
     case VARVAL_TOOL_LEFTMOVE_E_1:
-     	moveAxis(E_AXIS, -1);
+     	move_axis(E_AXIS, -1);
       break;
     case VARVAL_TOOL_RIGHTMOVE_E_1:
-      moveAxis(E_AXIS, 1);
+      move_axis(E_AXIS, 1);
       break;
     case VARVAL_TOOL_LEFTMOVE_X_10:
-     	moveAxis(X_AXIS, -10);
+     	move_axis(X_AXIS, -10);
       break;
     case VARVAL_TOOL_RIGHTMOVE_X_10:
-     	moveAxis(X_AXIS, 10);
+     	move_axis(X_AXIS, 10);
       break;
     case VARVAL_TOOL_LEFTMOVE_Y_10:
-      moveAxis(Y_AXIS, -10);
+      move_axis(Y_AXIS, -10);
       break;
     case VARVAL_TOOL_RIGHTMOVE_Y_10:
-      moveAxis(Y_AXIS, 10);
+      move_axis(Y_AXIS, 10);
       break;
     case VARVAL_TOOL_LEFTMOVE_Z_10:
-      moveAxis(Z_AXIS, -10);
+      move_axis(Z_AXIS, -10);
       break;
     case VARVAL_TOOL_RIGHTMOVE_Z_10:
-      moveAxis(Z_AXIS, 10);
+      move_axis(Z_AXIS, 10);
       break;
     case VARVAL_TOOL_LEFTMOVE_E_10:
-     	moveAxis(E_AXIS, -10);
+     	move_axis(E_AXIS, -10);
       break;
     case VARVAL_TOOL_RIGHTMOVE_E_10:
-      moveAxis(E_AXIS, 10);
+      move_axis(E_AXIS, 10);
       break;
     case VARVAL_TOOL_LEFTMOVE_X:
-      moveAxis(X_AXIS, -move_dis);
+      move_axis(X_AXIS, -move_dis);
       break;
     case VARVAL_TOOL_RIGHTMOVE_X:
-      moveAxis(X_AXIS, move_dis);
+      move_axis(X_AXIS, move_dis);
       break;
     case VARVAL_TOOL_FORWARDMOVE_Y:
-      moveAxis(Y_AXIS, -move_dis);
+      move_axis(Y_AXIS, -move_dis);
       break;
     case VARVAL_TOOL_BACKMOVE_Y:
-      moveAxis(Y_AXIS, move_dis);
+      move_axis(Y_AXIS, move_dis);
       break;
     case VARVAL_TOOL_UPMOVE_Z:
-      moveAxis(Z_AXIS, move_dis);
+      move_axis(Z_AXIS, move_dis);
       break;
     case VARVAL_TOOL_DOWNMOVE_Z:
-      moveAxis(Z_AXIS, -move_dis);
+      move_axis(Z_AXIS, -move_dis);
       break;
     case VARVAL_TOOL_ENTER_PAPER_HEIGHT:
       #if FYSTLCD_PAGE_EXIST(TOOL_PAPERHEIGHT)
@@ -3125,9 +3125,9 @@ static void dwin_on_cmd(millis_t& tNow) {
 
   #if 0
   SERIAL_ECHOPGM(" Addr:");
-  reportCmdContent(touch_lcd::ftAddr);
+  report_commands(touch_lcd::ftAddr);
   SERIAL_ECHOPGM(" Val:");
-  reportCmdContent(tval);
+  report_commands(tval);
   #endif
   
   uint8_t cmd[2];
@@ -3436,10 +3436,10 @@ static void dwin_on_cmd(millis_t& tNow) {
   case VARADDR_TUNE_MOVE_E:
     switch(tval) {
       case VARVAL_TUNE_FORWARD_E:      
-        moveAxis(E_AXIS, 5);
+        move_axis(E_AXIS, 5);
         break;
       case VARVAL_TUNE_BACKWARD_E:
-        moveAxis(E_AXIS, -5);
+        move_axis(E_AXIS, -5);
         break;
     }
     break;
