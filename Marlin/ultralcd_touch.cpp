@@ -1881,9 +1881,12 @@ static int16_t filament_temp_preheat(bool ifHeatBed = false) {
 }
 
 static void filament_load() {
+  // wait for homing cmd finished
+  if(commands_in_queue > 0) return;
+
   int16_t tempe = 0;
   uint8_t extru_index = 0;
-
+  
   if (filament_choice < FILAMENTS){
     extru_index = 0;
     tempe = lcd_preheat_hotend_temp[filament_choice];
@@ -1908,6 +1911,9 @@ static void filament_load() {
 }
 
 static void filament_unload() {
+  // wait for homing cmd finished
+  if(commands_in_queue > 0) return;
+  
   int16_t tempe = 0;
   uint8_t extru_index = 0;
 
