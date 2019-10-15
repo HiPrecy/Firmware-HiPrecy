@@ -2309,6 +2309,11 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       #if HAS_HEATED_BED
         thermalManager.setTargetBed(0);
       #endif
+      if(ftState&FTSTATE_FIRST_LAYER_CAL) {
+        ftState &= ~FTSTATE_FIRST_LAYER_CAL;
+        first_layer_cal_step = 0;
+        lay1cal_init();
+      }
       break;
 
     #if ENABLED(BABYSTEPPING)
@@ -3100,9 +3105,11 @@ static void dwin_on_cmd_setting(uint16_t tval) {
         lcd_save_settings();
         break;
     case VARVAL_SETTINGS_RESET:
+        print_job_timer.initStats();
         settings.reset();
         break;
     case VARVAL_SETTINGS_RESETSAVE:
+        print_job_timer.initStats();
         settings.reset();
         lcd_save_settings();
         break;
@@ -3226,7 +3233,7 @@ static void dwin_on_cmd(millis_t& tNow) {
   
   case VARADDR_FILAMENT_AUTO_ADD:
     if(tval > VARVAL_FILAMENT_OPE_EXTRU2) {
-      enqueue_and_echo_commands_now_P(PSTR("G28 XY"));
+      enqueue_and_echo_commands_P(PSTR("G28 XY"));
     }
     switch (tval) {
       case VARVAL_FILAMENT_OPE_EXTRU1:
@@ -3290,7 +3297,7 @@ static void dwin_on_cmd(millis_t& tNow) {
     
   case VARADDR_FILAMENT_AUTO_REMOVE:
     if(tval > VARVAL_FILAMENT_OPE_EXTRU2) {
-      enqueue_and_echo_commands_now_P(PSTR("G28 XY"));
+      enqueue_and_echo_commands_P(PSTR("G28 XY"));
     }
     switch (tval) {
       case VARVAL_FILAMENT_OPE_EXTRU1:
