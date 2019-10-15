@@ -1260,9 +1260,11 @@ void lcd_init() {
   
   touch_lcd::ftBegin();
   
-  lcd_startup_music();
+  lcd_boot_music();
 
-  lcd_set_page(0);
+  #ifdef BOOT_ANIMATION
+    lcd_set_page(BOOT_SCREEN_BEGIN_PAGE);
+  #endif
     
   #if FYSTLCD_PAGE_EXIST(MAIN)
     retPageId = FTPAGE(MAIN);
@@ -1322,37 +1324,53 @@ static void lcd_init_datas() {
   dwin_update_bed_status();
 }
 
-#define BOOT_SCREEN_ICONS 99
+#ifdef BOOT_ANIMATION
 
-static void lcd_boot_screen(millis_t& tNow)  {
-  static millis_t period = 30; // 8ms
-  static uint16_t pic_num = 0;
+  static void lcd_boot_screen(millis_t& tNow) {
+    if(myLcdEvt & ((uint16_t)0x0001 << LCDEVT_IF_CONTINE_PRINT)) {
+      return;
+    }
 
-  if(myLcdEvt & ((uint16_t)0x0001 << LCDEVT_IF_CONTINE_PRINT)) {
-    pic_num = BOOT_SCREEN_ICONS+2;
-    return;
-  }
-
-  if(pic_num > BOOT_SCREEN_ICONS+1)  {
-    return;
-  }
-  
-  if (tNow > period) {
-    if(pic_num > BOOT_SCREEN_ICONS)  {
+    if(lcd_get_page() == BOOT_SCREEN_END_PAGE) {
       #if FYSTLCD_PAGE_EXIST(MAIN)
         lcd_set_page_force(FTPAGE(MAIN));
-      #endif  
-      pic_num++;
+      #endif
+    }
+  }
+
+#else  
+
+  static void lcd_boot_screen(millis_t& tNow)  {
+    static millis_t period = 30; // 8ms
+    static uint16_t pic_num = 0;
+
+    if(myLcdEvt & ((uint16_t)0x0001 << LCDEVT_IF_CONTINE_PRINT)) {
+      pic_num = BOOT_SCREEN_ICONS+2;
+      return;
+    }
+
+    if(pic_num > BOOT_SCREEN_ICONS+1)  {
       return;
     }
     
-    myFysTLcd.ftCmdStart(VARADDR_BOOT_SCREEN);
-    myFysTLcd.ftCmdPut16(pic_num);
-    myFysTLcd.ftCmdSend();
-    period = tNow + 30;
-    pic_num++;
+    if (tNow > period) {
+      if(pic_num > BOOT_SCREEN_ICONS)  {
+        #if FYSTLCD_PAGE_EXIST(MAIN)
+          lcd_set_page_force(FTPAGE(MAIN));
+        #endif  
+        pic_num++;
+        return;
+      }
+      
+      myFysTLcd.ftCmdStart(VARADDR_BOOT_SCREEN);
+      myFysTLcd.ftCmdPut16(pic_num);
+      myFysTLcd.ftCmdSend();
+      period = tNow + 30;
+      pic_num++;
+    }
   }
-}
+
+#endif
 
 static void lcd_event() {
   if (myLcdEvt == 0x0000) return;
@@ -3796,7 +3814,7 @@ void kill_screen(const char* lcd_msg) {
   lcd_kill_screen();       
 }
 
-void lcd_startup_music() {
+void lcd_boot_music() {
   touch_lcd::ftPlayMusic(0x00, 0x0a, 0xFF);
   delay(100);
 }

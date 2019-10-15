@@ -208,6 +208,10 @@
 #elif ENABLED(TOUCH_LCD) // TOUCH_LCD
 
   #define FILE_PRINT_NEED_CONRIRM
+  #define BOOT_ANIMATION
+  #define BOOT_SCREEN_BEGIN_PAGE 162
+  #define BOOT_SCREEN_END_PAGE 229
+  #define BOOT_SCREEN_ICONS 99  
 
   #define LCDEVT_IF_CONTINE_PRINT             0
   #define LCDEVT_READY_CONTINE_PRINT          1
@@ -249,14 +253,15 @@
 
   void kill_screen(const char *);
   void dwin_popup_shutdown();
-  void lcd_startup_music();
+  void lcd_boot_music();
   void lcd_shutDown();
   void lcd_setstatus(const char* message, const bool persist = false);
-  
-  #define   lcd_set_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;}
-  #define   lcd_set_page_force(x) do{touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;} while(0)
-  #define   lcd_pop_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); currentPageId=x;}
-	//#define   lcd_set_return_page(x) do{retPageId =x;} while(0)		
+
+  #define lcd_get_page() touch_lcd::ftGetPage()
+  #define lcd_set_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;}
+  #define lcd_set_page_force(x) do{touch_lcd::ftSetPage(x); retPageId =x;currentPageId=x;} while(0)
+  #define lcd_pop_page(x)  if(currentPageId!=x){touch_lcd::ftSetPage(x); currentPageId=x;}
+	//#define   lcd_set_return_page(x) do{retPageId =x;} while(0)
   inline void lcd_set_return_page(uint16_t x) { retPageId =x;}
   void lcd_set_return_page_print();
   void lcd_set_page_print();
