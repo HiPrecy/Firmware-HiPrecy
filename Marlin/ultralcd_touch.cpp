@@ -1327,11 +1327,17 @@ static void lcd_init_datas() {
 #ifdef BOOT_ANIMATION
 
   static void lcd_boot_screen(millis_t& tNow) {
+    static bool done = false;
+
+    if(done) return;
+
     if(myLcdEvt & ((uint16_t)0x0001 << LCDEVT_IF_CONTINE_PRINT)) {
+      done = true;
       return;
     }
 
     if(lcd_get_page() == BOOT_SCREEN_END_PAGE) {
+      done = true;
       #if FYSTLCD_PAGE_EXIST(MAIN)
         lcd_set_page_force(FTPAGE(MAIN));
       #endif
