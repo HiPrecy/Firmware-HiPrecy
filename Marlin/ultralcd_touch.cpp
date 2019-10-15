@@ -2331,7 +2331,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       //
       #if ENABLED(TMC_Z_CALIBRATION)
         lcd_calibrating_z = true;
-        enqueue_and_echo_commands_P(PSTR("G28\nM915"));
+        enqueue_and_echo_commands_P(PSTR("G28\nM915\nM916"));
       #endif
       break;
       

@@ -5800,10 +5800,6 @@ void home_all_axes() { gcode_G28(true); }
     #endif
 
     report_current_position();
-
-    #if ENABLED(TOUCH_LCD) && ENABLED(TMC_Z_CALIBRATION)
-      lcd_flag_calibrate_z_done();
-    #endif
   }
 
 #endif // OLDSCHOOL_ABL
@@ -12095,6 +12091,12 @@ inline void gcode_M502() {
       SERIAL_ECHOLNPGM("\nHoming Z due to lost steps");
       enqueue_and_echo_commands_P(PSTR("G28 Z"));
     }
+
+    inline void gcode_M916() {
+      #if ENABLED(TOUCH_LCD)
+        lcd_flag_calibrate_z_done();
+      #endif
+    }
   #endif
 
 #endif // HAS_TRINAMIC
@@ -13348,6 +13350,7 @@ void process_parsed_command() {
         #endif
         #if ENABLED(TMC_Z_CALIBRATION)
           case 915: gcode_M915(); break;                          // M915: TMC Z axis calibration routine
+          case 916: gcode_M916(); break;                          // M916: TMC Z axis calibration routine done
         #endif
       #endif
 
