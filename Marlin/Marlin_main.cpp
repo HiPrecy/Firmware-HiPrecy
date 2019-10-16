@@ -3341,6 +3341,9 @@ static void homeaxis(const AxisEnum axis) {
     if (axis == Z_AXIS && set_bltouch_deployed(true)) return;
   #endif
 
+  if (axis == X_AXIS || axis == Y_AXIS)
+    do_homing_move(axis, 3.0f * -axis_home_dir);
+
   do_homing_move(axis, 1.5f * max_length(axis) * axis_home_dir);
 
   #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
@@ -12089,7 +12092,7 @@ inline void gcode_M502() {
       soft_endstops_enabled = true;
 
       SERIAL_ECHOLNPGM("\nHoming Z due to lost steps");
-      enqueue_and_echo_commands_P(PSTR("G28 Z"));
+      enqueue_and_echo_commands_P(PSTR("G28 Z\nM916"));
     }
 
     inline void gcode_M916() {
