@@ -2363,14 +2363,15 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     case VARVAL_TOOL_LOCK_AXIS:
       myFysTLcd.ftCmdStart(VARADDR_STATUS_AXIS_LOCK);
       if (X_ENABLE_READ == X_ENABLE_ON) {
-        disable_all_steppers();
         myFysTLcd.ftCmdJump(2);
+        enqueue_and_echo_commands_P(PSTR("M18"));
       }
       else {
-        enable_all_steppers();
         myFysTLcd.ftCmdPut16(1);
+        enqueue_and_echo_commands_P(PSTR("M17"));
       }
       myFysTLcd.ftCmdSend();
+
       break;
       
     #if FAN_COUNT > 0
