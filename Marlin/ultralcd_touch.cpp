@@ -2342,7 +2342,7 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       //
       #if ENABLED(TMC_Z_CALIBRATION)
         lcd_calibrating_z = true;
-        enqueue_and_echo_commands_P(PSTR("G28\nM915\nM916"));
+        enqueue_and_echo_commands_P(PSTR("G28\nM915"));
       #endif
       break;
       
@@ -3579,6 +3579,7 @@ static void lcd_period_prompt_report() {
 
 static void lcd_period_report(int16_t s) {
   uint8_t i;
+  char buffer[21];
 
   myFysTLcd.ftCmdStart(VARADDR_PERIOD_DATA);
   
@@ -3667,7 +3668,21 @@ static void lcd_period_report(int16_t s) {
       }
       myFysTLcd.ftCmdSend();
     }
+    else {
     
+      #if ENABLED(PRINTCOUNTER)
+
+        printStatistics state = print_job_timer.getStats();
+        sprintf_P(buffer, PSTR("%u"), state.totalPrints);
+        touch_lcd::ftPuts(VARADDR_INFO_PRINT, buffer, ATTACH_STR_LEN);
+
+        duration_t elapsed = state.printTime;
+        elapsed.toString(buffer);
+        touch_lcd::ftPuts(VARADDR_INFO_PRINT_ACC_TIME, buffer, ATTACH_STR_LEN);
+
+      #endif
+    }
+
   #endif
 }
 
