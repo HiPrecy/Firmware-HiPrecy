@@ -189,11 +189,14 @@
     st.setCurrent(mA, R_SENSE, HOLD_MULTIPLIER);
     st.microsteps(microsteps);
     st.blank_time(24);
-    st.off_time(5); // Only enables the driver if used with stealthChop
+    //st.off_time(5); // Only enables the driver if used with stealthChop
+    st.off_time(4); // Only enables the driver if used with stealthChop
     st.interpolate(INTERPOLATE);
     st.power_down_delay(128); // ~2s until driver lowers to hold current
-    st.hysteresis_start(3);
-    st.hysteresis_end(2);
+    //st.hysteresis_start(3);
+    //st.hysteresis_end(2);
+    st.hysteresis_start(0);
+    st.hysteresis_end(5);
     #if ENABLED(STEALTHCHOP)
       st.stealth_freq(1); // f_pwm = 2/683 f_clk
       st.stealth_autoscale(1);
