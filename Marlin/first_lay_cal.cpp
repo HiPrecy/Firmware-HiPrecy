@@ -61,7 +61,7 @@ bool lay1cal_preheat_f(uint8_t filament) {
 
   static const char cmd_preheat_17[] PROGMEM = "G28";
   static const char cmd_preheat_18[] PROGMEM = "G29";
-  static const char cmd_preheat_19[] PROGMEM = "G1 X0 Y0 F6000";
+  static const char cmd_preheat_19[] PROGMEM = "G1 X15 Y15 F6000";
   static const char cmd_preheat_20[] PROGMEM = "G92 E0.0";
 
   static const char * const preheat_cmd[][9] PROGMEM = {
@@ -180,6 +180,7 @@ void lay1cal_intro_line()
   }
   else
   {*/
+    enqueue_and_echo_commands_P(PSTR("G1 Z0.30"));
     enqueue_and_echo_commands_P(PSTR("G1 X60.0 E9.0 F1000.0"));
     enqueue_and_echo_commands_P(PSTR("G1 X100.0 E12.5 F1000.0"));
 //}
