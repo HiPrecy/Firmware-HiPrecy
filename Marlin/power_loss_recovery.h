@@ -95,9 +95,9 @@ enum JobRecoveryPhase : unsigned char {
 extern JobRecoveryPhase job_recovery_phase;
 
 #if HAS_LEVELING
-  #define APPEND_CMD_COUNT 12
+  #define APPEND_CMD_COUNT 6
 #else
-  #define APPEND_CMD_COUNT 10
+  #define APPEND_CMD_COUNT 4
 #endif
 
 extern char job_recovery_commands[BUFSIZE + APPEND_CMD_COUNT][MAX_CMD_SIZE];
