@@ -872,14 +872,15 @@ void lcd_quick_feedback(const bool clear_buttons) {
       // Return to status now
       lcd_return_to_status();
 
+/*
       // Turn leveling off and home
-      enqueue_and_echo_commands_P(PSTR("M420 S0\nG28 R0"
+      enqueue_and_echo_commands_P(PSTR("M420 S0\nG1 Z5\nG28 R0"
         #if ENABLED(MARLIN_DEV_MODE)
           " S"
         #elif !IS_KINEMATIC
           " X Y"
         #endif
-      ));
+      ));*/
 
       #if HAS_HEATED_BED
         const int16_t bt = job_recovery_info.target_temperature_bed;

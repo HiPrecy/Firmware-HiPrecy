@@ -380,7 +380,7 @@
 
 bool Running = true;
 
-uint8_t marlin_debug_flags = DEBUG_NONE;
+uint8_t marlin_debug_flags = DEBUG_ECHO;
 
 /**
  * Cartesian Current Position
@@ -1253,6 +1253,7 @@ inline void get_serial_commands() {
       static uint8_t job_recovery_commands_index = 0; // Resets on reboot
       if (job_recovery_commands_count) {
         if (_enqueuecommand(job_recovery_commands[job_recovery_commands_index])) {
+        //if (enqueue_and_echo_command(job_recovery_commands[job_recovery_commands_index])) {
           ++job_recovery_commands_index;
           if (!--job_recovery_commands_count) job_recovery_phase = JOB_RECOVERY_DONE;
         }
@@ -6650,10 +6651,26 @@ void home_all_axes() { gcode_G28(true); }
  * G92: Set current position to given X Y Z E
  */
 inline void gcode_G92() {
+  bool didE = false;
+  bool didXYZ = false;
+  /*
+  #if IS_SCARA || !HAS_POSITION_SHIFT || ENABLED(HANGPRINTER)
+    bool didXYZ = false;
+  #else
+    constexpr bool didXYZ = false;
+  #endif
+  */
 
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    switch (parser.subcode) {
-      case 1:
+  #if USE_GCODE_SUBCODES
+    const uint8_t subcode_G92 = parser.subcode;
+  #else
+    constexpr uint8_t subcode_G92 = 0;
+  #endif
+
+  switch (subcode_G92) {
+    default: break;
+    #if ENABLED(CNC_COORDINATE_SYSTEMS)    
+      case 1: {
         // Zero the G92 values and restore current position
         #if !IS_SCARA
           LOOP_XYZ(i) {
@@ -6664,49 +6681,67 @@ inline void gcode_G92() {
             }
           }
         #endif // Not SCARA
-        return;
-    }
-  #endif
-
-  #if ENABLED(CNC_COORDINATE_SYSTEMS)
-    #define IS_G92_0 (parser.subcode == 0)
-  #else
-    #define IS_G92_0 true
-  #endif
-
-  bool didE = false;
-  #if IS_SCARA || !HAS_POSITION_SHIFT || ENABLED(HANGPRINTER)
-    bool didXYZ = false;
-  #else
-    constexpr bool didXYZ = false;
-  #endif
-
-  if (IS_G92_0) LOOP_XYZE(i) {
-    if (parser.seenval(axis_codes[i])) {
-      const float l = parser.value_axis_units((AxisEnum)i),
-                  v = i == E_CART ? l : LOGICAL_TO_NATIVE(l, i),
-                  d = v - current_position[i];
-      if (!NEAR_ZERO(d)
-        #if ENABLED(HANGPRINTER)
-          || true // Hangprinter needs to update its line lengths whether current_position changed or not
-        #endif
-      ) {
-        #if IS_SCARA || !HAS_POSITION_SHIFT || ENABLED(HANGPRINTER)
-          if (i == E_CART) didE = true; else didXYZ = true;
-          current_position[i] = v;        // Without workspaces revert to Marlin 1.0 behavior
+      }return;
+    #endif
+    
+    #if ENABLED(POWER_LOSS_RECOVERY)
+       case 8: {
+        LOOP_XYZE(i) {
+          if (parser.seenval(axis_codes[i])) {
+            current_position[i] = parser.value_axis_units((AxisEnum)i);
+        #if IS_SCARA || !HAS_POSITION_SHIFT
+              if (i == E_AXIS) didE = true; else didXYZ = true;
         #elif HAS_POSITION_SHIFT
-          if (i == E_CART) {
-            didE = true;
-            current_position[E_CART] = v; // When using coordinate spaces, only E is set directly
-          }
-          else {
-            position_shift[i] += d;       // Other axes simply offset the coordinate space
-            update_software_endstops((AxisEnum)i);
-          }
+              if (i == E_AXIS) didE = true; else didXYZ = true;
         #endif
+          }
+        }
+      } break;
+      
+      case 9: {
+        LOOP_XYZE(i) {
+          if (parser.seenval(axis_codes[i])) {
+            current_position[i] = parser.value_axis_units((AxisEnum)i);
+        #if IS_SCARA || !HAS_POSITION_SHIFT
+              if (i == E_AXIS) didE = true; else didXYZ = true;
+        #elif HAS_POSITION_SHIFT
+              if (i == E_AXIS) didE = true;
+        #endif
+          }
+        }
+      } break;
+    #endif
+
+    case 0: {
+      LOOP_XYZE(i) {
+        if (parser.seenval(axis_codes[i])) {
+          const float l = parser.value_axis_units((AxisEnum)i),
+                      v = i == E_CART ? l : LOGICAL_TO_NATIVE(l, i),
+                      d = v - current_position[i];
+          if (!NEAR_ZERO(d)
+            #if ENABLED(HANGPRINTER)
+              || true // Hangprinter needs to update its line lengths whether current_position changed or not
+            #endif
+          ) {
+            #if IS_SCARA || !HAS_POSITION_SHIFT || ENABLED(HANGPRINTER)
+              if (i == E_CART) didE = true; else didXYZ = true;
+              current_position[i] = v;        // Without workspaces revert to Marlin 1.0 behavior
+            #elif HAS_POSITION_SHIFT
+              if (i == E_CART) {
+                didE = true;
+                current_position[E_CART] = v; // When using coordinate spaces, only E is set directly
+              }
+              else {
+                didXYZ = true;
+                position_shift[i] += d;       // Other axes simply offset the coordinate space
+                update_software_endstops((AxisEnum)i);
+              }
+            #endif
+          }
+        }
       }
-    }
-  }
+    } break;
+  } 
 
   #if ENABLED(CNC_COORDINATE_SYSTEMS)
     // Apply workspace offset to the active coordinate system
@@ -6715,7 +6750,10 @@ inline void gcode_G92() {
   #endif
 
   // Update planner/steppers only if the native coordinates changed
-  if    (didXYZ) SYNC_PLAN_POSITION_KINEMATIC();
+  if    (didXYZ) {
+    SERIAL_ECHOLN("didXYZ");
+    SYNC_PLAN_POSITION_KINEMATIC();
+  }
   else if (didE) sync_plan_position_e();
 
   report_current_position();
@@ -12895,7 +12933,7 @@ void process_parsed_command() {
   KEEPALIVE_STATE(IN_HANDLER);
 
   // Handle a known G, M, or T
-  switch (parser.command_letter) {
+  switch (parser.command_letter) {    
     case 'G': switch (parser.codenum) {
 
       case 0: case 1: gcode_G0_G1(                                // G0: Fast Move, G1: Linear Move
@@ -13387,6 +13425,7 @@ void process_next_command() {
   // Parse the next command in the queue
   parser.parse(current_command);
   process_parsed_command();
+  //report_current_position_detail();
 }
 
 /**
@@ -14483,15 +14522,15 @@ void prepare_move_to_destination() {
         #if ENABLED(PREVENT_COLD_EXTRUSION)
           if (thermalManager.tooColdToExtrude(active_extruder)) {
             current_position[E_CART] = destination[E_CART]; // Behave as if the move really took place, but ignore E part
-            SERIAL_ECHO_START();
-            SERIAL_ECHOLNPGM(MSG_ERR_COLD_EXTRUDE_STOP);
+            //SERIAL_ECHO_START();
+            //SERIAL_ECHOLNPGM(MSG_ERR_COLD_EXTRUDE_STOP);
           }
         #endif // PREVENT_COLD_EXTRUSION
         #if ENABLED(PREVENT_LENGTHY_EXTRUDE)
           if (ABS(destination[E_CART] - current_position[E_CART]) * planner.e_factor[active_extruder] > (EXTRUDE_MAXLENGTH)) {
             current_position[E_CART] = destination[E_CART]; // Behave as if the move really took place, but ignore E part
-            SERIAL_ECHO_START();
-            SERIAL_ECHOLNPGM(MSG_ERR_LONG_EXTRUDE_STOP);
+            //SERIAL_ECHO_START();
+            //SERIAL_ECHOLNPGM(MSG_ERR_LONG_EXTRUDE_STOP);
           }
         #endif // PREVENT_LENGTHY_EXTRUDE
       }

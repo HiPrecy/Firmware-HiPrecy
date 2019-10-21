@@ -1297,7 +1297,7 @@ static void lcd_init_datas() {
   myLcdEvt |= ((uint16_t)0x0001 << LCDEVT_DETAIL_EXTRUDER);
   
   touch_lcd::ftPuts(VARADDR_VERSION_DATE, SHORT_BUILD_VERSION, ATTACH_STR_LEN);
-  touch_lcd::ftPuts(VARADDR_SERIAL_NUMBER, SERIAL_NUMBER, ATTACH_STR_LEN);
+  //touch_lcd::ftPuts(VARADDR_SERIAL_NUMBER, SERIAL_NUMBER, ATTACH_STR_LEN);
 
   #if ENABLED(PRINTCOUNTER)
     char buffer[21];
@@ -2621,15 +2621,6 @@ static void dwin_on_cmd_tool(uint16_t tval) {
     
     delay(20);
 
-    // Turn leveling off and home
-    enqueue_and_echo_commands_P(PSTR("M420 S0\nG28 R0"
-      #if ENABLED(MARLIN_DEV_MODE)
-        " S"
-      #elif !IS_KINEMATIC
-        " X Y"
-      #endif
-    ));
-
     #if HAS_HEATED_BED
       const int16_t bt = job_recovery_info.target_temperature_bed;
       if (bt) {
@@ -3669,20 +3660,18 @@ static void lcd_period_report(int16_t s) {
       }
       myFysTLcd.ftCmdSend();
     }
-    else {
     
-      #if ENABLED(PRINTCOUNTER)
+    #if ENABLED(PRINTCOUNTER)
 
-        printStatistics state = print_job_timer.getStats();
-        sprintf_P(buffer, PSTR("%u"), state.totalPrints);
-        touch_lcd::ftPuts(VARADDR_INFO_PRINT, buffer, ATTACH_STR_LEN);
+      printStatistics state = print_job_timer.getStats();
+      sprintf_P(buffer, PSTR("%u"), state.totalPrints);
+      touch_lcd::ftPuts(VARADDR_INFO_PRINT, buffer, ATTACH_STR_LEN);
 
-        duration_t elapsed = state.printTime;
-        elapsed.toString(buffer);
-        touch_lcd::ftPuts(VARADDR_INFO_PRINT_ACC_TIME, buffer, ATTACH_STR_LEN);
+      duration_t elapsed = state.printTime;
+      elapsed.toString(buffer);
+      touch_lcd::ftPuts(VARADDR_INFO_PRINT_ACC_TIME, buffer, ATTACH_STR_LEN);
 
-      #endif
-    }
+    #endif
 
   #endif
 }

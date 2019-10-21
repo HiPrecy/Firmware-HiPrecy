@@ -132,13 +132,36 @@ void check_print_job_recovery() {
       if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
 
         uint8_t ind = 0;
-
+        char str_1[16], str_2[16];
+/*
+          sprintf_P(power_off_commands[0], PSTR("G92 Z%s E%s"), str_Z, str_E);
+          enqueue_and_echo_command(power_off_commands[0]);
+          sprintf_P(power_off_commands[1], PSTR("G0 Z%s"), str_Z_up);
+          enqueue_and_echo_command(power_off_commands[1]);
+          sprintf_P(power_off_commands[2], PSTR("G28 X0 Y0"));
+          enqueue_and_echo_command(power_off_commands[2]);
+          sprintf_P(power_off_commands[3], PSTR("G0 Z%s"), str_Z);
+          */
+          dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
+          dtostrf(job_recovery_info.current_position[E_AXIS], 1, 3, str_2);
+          sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2);
+          strcpy_P(job_recovery_commands[ind++], PSTR("G0 Z5"));
+          strcpy_P(job_recovery_commands[ind++], PSTR("G28 R0"
+          #if ENABLED(MARLIN_DEV_MODE)
+            " S"
+          #elif !IS_KINEMATIC
+            " X Y"                                                                  // Home X and Y for Cartesian
+          #endif
+          ));
+          sprintf_P(job_recovery_commands[ind++], PSTR("G0 Z%s"), str_1);
+          
+/*
         #if HAS_LEVELING
           strcpy_P(job_recovery_commands[ind++], PSTR("M420 S0 Z0"));               // Leveling off before G92 or G28
         #endif
 
-        strcpy_P(job_recovery_commands[ind++], PSTR("G92.0 Z0"));                   // Ensure Z is equal to 0
-        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z2"));                      // Raise Z by 2mm (we hope!)
+        strcpy_P(job_recovery_commands[ind++], PSTR("G92.9 Z0"));                   // Ensure Z is equal to 0
+        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z5"));                      // Raise Z by 2mm (we hope!)
         strcpy_P(job_recovery_commands[ind++], PSTR("G28 R0"
           #if ENABLED(MARLIN_DEV_MODE)
             " S"
@@ -164,7 +187,7 @@ void check_print_job_recovery() {
         sprintf_P(job_recovery_commands[ind++], PSTR("G1 X%s Y%s F3000"), str_1, str_2);
 
         // Move back to the saved Z and E
-        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z0 F200"));
+        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z0 F50"));        
         dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
         dtostrf(job_recovery_info.current_position[E_CART]
           #if ENABLED(SAVE_EACH_CMD_MODE)
@@ -172,16 +195,32 @@ void check_print_job_recovery() {
           #endif
           , 1, 3, str_2
         );
-        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2);
-
+        //sprintf_P(job_recovery_commands[ind++], PSTR("G1 Z%s F50"), str_1);
+        sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 Z%s E%s"), str_1, str_2);        
+        //sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 Z%s"), str_1);
+        //sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 E%s"), str_2);
+*/
         // Restore the feedrate
         sprintf_P(job_recovery_commands[ind++], PSTR("G1 F%d"), job_recovery_info.feedrate);
+
+        // Relative axis modes
+        memcpy(axis_relative_modes,job_recovery_info.axis_relative_modes,sizeof(axis_relative_modes));
+
+        #if HAS_HOME_OFFSET
+          memcpy(home_offset,job_recovery_info.home_offset,sizeof(home_offset));
+        #endif
+        #if HAS_POSITION_SHIFT
+          memcpy(position_shift,job_recovery_info.position_shift,sizeof(position_shift));
+        #endif
+        #if HAS_HOME_OFFSET || HAS_POSITION_SHIFT
+          LOOP_XYZ(i) update_software_endstops((AxisEnum)i);
+        #endif
   
         uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
         while (c--) {
           strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
           r = (r + 1) % BUFSIZE;
-        }        
+        }
 
         if (job_recovery_info.sd_filename[0] == '/') job_recovery_info.sd_filename[0] = ' ';
         sprintf_P(job_recovery_commands[ind++], PSTR("M23 %s"), job_recovery_info.sd_filename);
@@ -237,6 +276,14 @@ void save_job_recovery_info() {
 
     // Machine state
     COPY(job_recovery_info.current_position, current_position);
+    #if HAS_HOME_OFFSET
+      //job_recovery_info.home_offset = home_offset;
+      memcpy(job_recovery_info.home_offset, home_offset, sizeof(home_offset));
+    #endif
+    #if HAS_POSITION_SHIFT
+      //job_recovery_info.position_shift = position_shift;
+      memcpy(job_recovery_info.position_shift, position_shift, sizeof(position_shift));
+    #endif
     job_recovery_info.feedrate = uint16_t(feedrate_mm_s * 60.0f);
 
     #if HOTENDS > 1
@@ -263,6 +310,9 @@ void save_job_recovery_info() {
         #endif
       );
     #endif
+
+    // Relative axis modes
+    memcpy(job_recovery_info.axis_relative_modes,axis_relative_modes,sizeof(axis_relative_modes));
 
     // Commands in the queue
     job_recovery_info.cmd_queue_index_r = cmd_queue_index_r;

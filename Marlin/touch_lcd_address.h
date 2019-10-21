@@ -289,7 +289,7 @@ static const uint16_t VARVAL_PRINT_FILECHOOSE[] = { 0x0004, 0x0005, 0x0006, 0x00
 #define     VARADDR_INFO_PRINT                      0x1780
 #define     VARADDR_INFO_PRINT_ACC_TIME             0x1788
 
-#define     ATTACH_STR_LEN                          0x14
+#define     ATTACH_STR_LEN                          16
 #define     SERIAL_NUMBER                           "010-2323-4545"
 
 // Page number

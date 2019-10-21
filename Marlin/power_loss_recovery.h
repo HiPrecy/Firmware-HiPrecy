@@ -33,13 +33,20 @@
 
 #define SAVE_INFO_INTERVAL_MS 0
 #define SAVE_EACH_CMD_MODE
-//#define DEBUG_POWER_LOSS_RECOVERY
+#define DEBUG_POWER_LOSS_RECOVERY
 
 typedef struct {
   uint8_t valid_head;
 
   // Machine state
   float current_position[NUM_AXIS];
+  #if HAS_HOME_OFFSET
+    float home_offset[XYZ];
+  #endif
+  #if HAS_POSITION_SHIFT
+    float position_shift[XYZ];
+  #endif
+
   uint16_t feedrate;
 
   #if HOTENDS > 1
@@ -60,6 +67,8 @@ typedef struct {
     bool leveling;
     float fade;
   #endif
+
+  bool axis_relative_modes[XYZE];
 
   // Command queue
   uint8_t cmd_queue_index_r, commands_in_queue;
@@ -86,9 +95,9 @@ enum JobRecoveryPhase : unsigned char {
 extern JobRecoveryPhase job_recovery_phase;
 
 #if HAS_LEVELING
-  #define APPEND_CMD_COUNT 11
+  #define APPEND_CMD_COUNT 12
 #else
-  #define APPEND_CMD_COUNT 9
+  #define APPEND_CMD_COUNT 10
 #endif
 
 extern char job_recovery_commands[BUFSIZE + APPEND_CMD_COUNT][MAX_CMD_SIZE];

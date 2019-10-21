@@ -134,7 +134,7 @@
 #endif
 
 // Show extra position information in M114
-//#define M114_DETAIL
+#define M114_DETAIL
 
 // Show Temperature ADC value
 // Enable for M105 to include ADC values read from temperature sensors.
@@ -941,7 +941,7 @@
 // @section serial
 
 // The ASCII buffer for serial input
-#define MAX_CMD_SIZE 96
+#define MAX_CMD_SIZE 72
 #define BUFSIZE 4
 
 // Transmission to Host Buffer Size
@@ -1183,7 +1183,7 @@
   #define Z2_CURRENT         800
   #define Z2_MICROSTEPS       16
 
-  #define E0_CURRENT         500
+  #define E0_CURRENT         550
   #define E0_MICROSTEPS       16
 
   #define E1_CURRENT         800
