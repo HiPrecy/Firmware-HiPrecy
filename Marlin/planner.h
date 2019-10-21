@@ -80,6 +80,11 @@ typedef struct {
     bool count_it;
   #endif
 
+  #if ENABLED(POWER_LOSS_RECOVERY)
+    float current_position[XYZE];
+    uint32_t sd_pos;
+  #endif
+
   // Fields used by the motion planner to manage acceleration
   float nominal_speed_sqr,                  // The nominal speed for this block in (mm/sec)^2
         entry_speed_sqr,                    // Entry speed at previous-current junction in (mm/sec)^2

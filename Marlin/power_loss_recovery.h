@@ -33,7 +33,7 @@
 
 #define SAVE_INFO_INTERVAL_MS 0
 #define SAVE_EACH_CMD_MODE
-#define DEBUG_POWER_LOSS_RECOVERY
+//#define DEBUG_POWER_LOSS_RECOVERY
 
 typedef struct {
   uint8_t valid_head;
@@ -71,8 +71,8 @@ typedef struct {
   bool axis_relative_modes[XYZE];
 
   // Command queue
-  uint8_t cmd_queue_index_r, commands_in_queue;
-  char command_queue[BUFSIZE][MAX_CMD_SIZE];
+  //uint8_t cmd_queue_index_r, commands_in_queue;
+  //char command_queue[BUFSIZE][MAX_CMD_SIZE];
 
   // SD Filename and position
   char sd_filename[MAXPATHNAMELENGTH];

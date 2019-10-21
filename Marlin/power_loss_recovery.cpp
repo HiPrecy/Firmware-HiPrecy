@@ -37,6 +37,10 @@
 #include "temperature.h"
 #include "ultralcd.h"
 
+// data from planner
+extern volatile float current_planner_block_position[XYZE];
+extern uint32_t current_planner_block_sd_pos;
+
 // Recovery data
 job_recovery_info_t job_recovery_info;
 JobRecoveryPhase job_recovery_phase = JOB_RECOVERY_IDLE;
@@ -88,12 +92,14 @@ extern uint8_t active_extruder, commands_in_queue, cmd_queue_index_r;
           SERIAL_PROTOCOLPAIR("leveling: ", int(job_recovery_info.leveling));
           SERIAL_PROTOCOLLNPAIR(" fade: ", int(job_recovery_info.fade));
         #endif
+        /*
         SERIAL_PROTOCOLLNPAIR("cmd_queue_index_r: ", int(job_recovery_info.cmd_queue_index_r));
         SERIAL_PROTOCOLLNPAIR("commands_in_queue: ", int(job_recovery_info.commands_in_queue));
         if (recovery)
           for (uint8_t i = 0; i < job_recovery_commands_count; i++) SERIAL_PROTOCOLLNPAIR("> ", job_recovery_commands[i]);
         else
           for (uint8_t i = 0; i < job_recovery_info.commands_in_queue; i++) SERIAL_PROTOCOLLNPAIR("> ", job_recovery_info.command_queue[i]);
+        */
         SERIAL_PROTOCOLLNPAIR("sd_filename: ", job_recovery_info.sd_filename);
         SERIAL_PROTOCOLLNPAIR("sdpos: ", job_recovery_info.sdpos);
         SERIAL_PROTOCOLLNPAIR("print_job_elapsed: ", job_recovery_info.print_job_elapsed);
@@ -132,30 +138,24 @@ void check_print_job_recovery() {
       if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
 
         uint8_t ind = 0;
+
+        
         char str_1[16], str_2[16];
-/*
-          sprintf_P(power_off_commands[0], PSTR("G92 Z%s E%s"), str_Z, str_E);
-          enqueue_and_echo_command(power_off_commands[0]);
-          sprintf_P(power_off_commands[1], PSTR("G0 Z%s"), str_Z_up);
-          enqueue_and_echo_command(power_off_commands[1]);
-          sprintf_P(power_off_commands[2], PSTR("G28 X0 Y0"));
-          enqueue_and_echo_command(power_off_commands[2]);
-          sprintf_P(power_off_commands[3], PSTR("G0 Z%s"), str_Z);
-          */
-          dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
-          dtostrf(job_recovery_info.current_position[E_AXIS], 1, 3, str_2);
-          sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2);
-          strcpy_P(job_recovery_commands[ind++], PSTR("G0 Z5"));
-          strcpy_P(job_recovery_commands[ind++], PSTR("G28 R0"
-          #if ENABLED(MARLIN_DEV_MODE)
-            " S"
-          #elif !IS_KINEMATIC
-            " X Y"                                                                  // Home X and Y for Cartesian
-          #endif
-          ));
-          sprintf_P(job_recovery_commands[ind++], PSTR("G0 Z%s"), str_1);
-          
-/*
+
+        dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
+        dtostrf(job_recovery_info.current_position[E_AXIS], 1, 3, str_2);
+        sprintf_P(job_recovery_commands[ind++], PSTR("G92.0 Z%s E%s"), str_1, str_2);
+        strcpy_P(job_recovery_commands[ind++], PSTR("G0 Z5"));
+        strcpy_P(job_recovery_commands[ind++], PSTR("G28 R0"
+        #if ENABLED(MARLIN_DEV_MODE)
+          " S"
+        #elif !IS_KINEMATIC
+          " X Y"                                                                  // Home X and Y for Cartesian
+        #endif
+        ));
+        sprintf_P(job_recovery_commands[ind++], PSTR("G0 Z%s"), str_1);        
+
+        /*
         #if HAS_LEVELING
           strcpy_P(job_recovery_commands[ind++], PSTR("M420 S0 Z0"));               // Leveling off before G92 or G28
         #endif
@@ -187,7 +187,7 @@ void check_print_job_recovery() {
         sprintf_P(job_recovery_commands[ind++], PSTR("G1 X%s Y%s F3000"), str_1, str_2);
 
         // Move back to the saved Z and E
-        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z0 F50"));        
+        strcpy_P(job_recovery_commands[ind++], PSTR("G1 Z0 F50"));
         dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
         dtostrf(job_recovery_info.current_position[E_CART]
           #if ENABLED(SAVE_EACH_CMD_MODE)
@@ -195,11 +195,9 @@ void check_print_job_recovery() {
           #endif
           , 1, 3, str_2
         );
-        //sprintf_P(job_recovery_commands[ind++], PSTR("G1 Z%s F50"), str_1);
-        sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 Z%s E%s"), str_1, str_2);        
-        //sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 Z%s"), str_1);
-        //sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 E%s"), str_2);
-*/
+        sprintf_P(job_recovery_commands[ind++], PSTR("G92.9 Z%s E%s"), str_1, str_2);
+        */
+
         // Restore the feedrate
         sprintf_P(job_recovery_commands[ind++], PSTR("G1 F%d"), job_recovery_info.feedrate);
 
@@ -215,13 +213,15 @@ void check_print_job_recovery() {
         #if HAS_HOME_OFFSET || HAS_POSITION_SHIFT
           LOOP_XYZ(i) update_software_endstops((AxisEnum)i);
         #endif
-  
+
+        /*
         uint8_t r = job_recovery_info.cmd_queue_index_r, c = job_recovery_info.commands_in_queue;
         while (c--) {
           strcpy(job_recovery_commands[ind++], job_recovery_info.command_queue[r]);
           r = (r + 1) % BUFSIZE;
         }
-
+        */
+        
         if (job_recovery_info.sd_filename[0] == '/') job_recovery_info.sd_filename[0] = ' ';
         sprintf_P(job_recovery_commands[ind++], PSTR("M23 %s"), job_recovery_info.sd_filename);
         sprintf_P(job_recovery_commands[ind++], PSTR("M24 S%ld T%ld"), job_recovery_info.sdpos, job_recovery_info.print_job_elapsed);
@@ -275,14 +275,16 @@ void save_job_recovery_info() {
     job_recovery_info.valid_foot = job_recovery_info.valid_head;
 
     // Machine state
-    COPY(job_recovery_info.current_position, current_position);
+    //COPY(job_recovery_info.current_position, current_position);
+    job_recovery_info.current_position[X_AXIS] = LOGICAL_X_POSITION(current_planner_block_position[X_AXIS]);
+    job_recovery_info.current_position[Y_AXIS] = LOGICAL_Y_POSITION(current_planner_block_position[Y_AXIS]);
+    job_recovery_info.current_position[Z_AXIS] = LOGICAL_Z_POSITION(current_planner_block_position[Z_AXIS]);
+    job_recovery_info.current_position[E_AXIS] = current_planner_block_position[E_AXIS];
     #if HAS_HOME_OFFSET
-      //job_recovery_info.home_offset = home_offset;
-      memcpy(job_recovery_info.home_offset, home_offset, sizeof(home_offset));
+      COPY(job_recovery_info.home_offset, home_offset);
     #endif
     #if HAS_POSITION_SHIFT
-      //job_recovery_info.position_shift = position_shift;
-      memcpy(job_recovery_info.position_shift, position_shift, sizeof(position_shift));
+      COPY(job_recovery_info.position_shift, position_shift);
     #endif
     job_recovery_info.feedrate = uint16_t(feedrate_mm_s * 60.0f);
 
@@ -315,16 +317,17 @@ void save_job_recovery_info() {
     memcpy(job_recovery_info.axis_relative_modes,axis_relative_modes,sizeof(axis_relative_modes));
 
     // Commands in the queue
-    job_recovery_info.cmd_queue_index_r = cmd_queue_index_r;
-    job_recovery_info.commands_in_queue = commands_in_queue;
-    COPY(job_recovery_info.command_queue, command_queue);
+    //job_recovery_info.cmd_queue_index_r = cmd_queue_index_r;
+    //job_recovery_info.commands_in_queue = commands_in_queue;
+    //COPY(job_recovery_info.command_queue, command_queue);
 
     // Elapsed print job time
     job_recovery_info.print_job_elapsed = print_job_timer.duration();
 
     // SD file position
     card.getAbsFilename(job_recovery_info.sd_filename);
-    job_recovery_info.sdpos = card.getIndex();
+    //job_recovery_info.sdpos = card.getIndex();
+    job_recovery_info.sdpos = current_planner_block_sd_pos;
 
     #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
       SERIAL_PROTOCOLLNPGM("Saving...");

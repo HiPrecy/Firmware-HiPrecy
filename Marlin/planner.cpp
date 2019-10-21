@@ -81,6 +81,11 @@
   #include "power.h"
 #endif
 
+#if ENABLED(POWER_LOSS_RECOVERY)
+  volatile float current_planner_block_position[XYZE];
+  uint32_t current_planner_block_sd_pos;
+#endif
+
 // Delay for delivery of first block to the stepper ISR, if the queue contains 2 or
 // fewer movements. The delay is measured in milliseconds, and must be less than 250ms
 #define BLOCK_DELAY_FOR_1ST_MOVE 100
@@ -1600,6 +1605,33 @@ bool Planner::_buffer_steps(const int32_t (&target)[NUM_AXIS]
     delay_before_delivering = BLOCK_DELAY_FOR_1ST_MOVE;
   }
 
+  #if ENABLED(POWER_LOSS_RECOVERY)
+
+    COPY(block->current_position, current_position);
+    block->sd_pos = current_command_sd_pos;
+    //SERIAL_ECHOLNPAIR("sd_pos2:", current_command_sd_pos);
+    //SERIAL_ECHOLNPAIR("bbh:", block_buffer_head);
+    //SERIAL_PROTOCOLPAIR("X:", LOGICAL_X_POSITION(current_position[X_AXIS]));
+    //SERIAL_PROTOCOLPAIR(" Y:", LOGICAL_Y_POSITION(current_position[Y_AXIS]));
+    //SERIAL_PROTOCOLPAIR(" Z:", LOGICAL_Z_POSITION(current_position[Z_AXIS]));
+    //SERIAL_PROTOCOLLNPAIR(" E:", current_position[E_CART]);
+
+    //SERIAL_ECHOLNPAIR("bbp:", block_buffer_planned);
+    block_t *cur = &block_buffer[block_buffer_planned];
+    if (stepper.is_block_busy(cur)) {
+      cur = &block_buffer[next_block_index(block_buffer_planned)];
+    }
+    COPY(current_planner_block_position,cur->current_position);
+    current_planner_block_sd_pos = cur->sd_pos;
+    //SERIAL_ECHOLNPAIR("sd_pos3:", current_planner_block_sd_pos);
+    //SERIAL_PROTOCOLPAIR("X:", LOGICAL_X_POSITION(current_planner_block_position[X_AXIS]));
+    //SERIAL_PROTOCOLPAIR(" Y:", LOGICAL_Y_POSITION(current_planner_block_position[Y_AXIS]));
+    //SERIAL_PROTOCOLPAIR(" Z:", current_planner_block_position[Z_AXIS]);
+    //SERIAL_PROTOCOLPAIR(" Z:", LOGICAL_Z_POSITION(current_planner_block_position[Z_AXIS]));
+    //SERIAL_PROTOCOLLNPAIR(" E:", current_planner_block_position[E_CART]);
+
+  #endif
+
   // Move buffer head
   block_buffer_head = next_buffer_head;
 
@@ -2475,7 +2507,7 @@ bool Planner::_populate_block(block_t * const block, bool split_move,
       COPY(position_float, target_float);
     #endif
   }
-
+  
   // Movement was accepted
   return true;
 } // _populate_block()

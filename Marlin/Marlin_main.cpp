@@ -380,7 +380,7 @@
 
 bool Running = true;
 
-uint8_t marlin_debug_flags = DEBUG_ECHO;
+uint8_t marlin_debug_flags = DEBUG_NONE;
 
 /**
  * Cartesian Current Position
@@ -429,7 +429,11 @@ uint8_t commands_in_queue = 0, // Count of commands in the queue
         cmd_queue_index_r = 0, // Ring buffer read (out) position
         cmd_queue_index_w = 0; // Ring buffer write (in) position
 
+uint32_t command_sd_pos[BUFSIZE];
+volatile uint32_t current_command_sd_pos;
+
 char command_queue[BUFSIZE][MAX_CMD_SIZE];
+
 
 /**
  * Next Injected Command pointer. NULL if no commands are being injected.
@@ -1151,6 +1155,15 @@ inline void get_serial_commands() {
   } // queue has space, serial has data
 }
 
+#if ENABLED(POWER_LOSS_RECOVERY)
+  void set_command_sd_pos(){
+    static uint32_t last_sd_pos = 0;
+    command_sd_pos[cmd_queue_index_w] = last_sd_pos;
+    last_sd_pos = card.getIndex();
+  }
+#endif
+
+
 #if ENABLED(SDSUPPORT)
 
   #if ENABLED(PRINTER_EVENT_LEDS) && HAS_RESUME_CONTINUE
@@ -1231,6 +1244,10 @@ inline void get_serial_commands() {
 
         command_queue[cmd_queue_index_w][sd_count] = '\0'; // terminate string
         sd_count = 0; // clear sd line buffer
+
+        #if ENABLED(POWER_LOSS_RECOVERY)
+          set_command_sd_pos();
+        #endif
 
         _commit_command(false);
       }
@@ -13412,6 +13429,7 @@ void process_parsed_command() {
 
 void process_next_command() {
   char * const current_command = command_queue[cmd_queue_index_r];
+  current_command_sd_pos = command_sd_pos[cmd_queue_index_r];
 
   if (DEBUGGING(ECHO)) {
     SERIAL_ECHO_START();
@@ -13425,7 +13443,6 @@ void process_next_command() {
   // Parse the next command in the queue
   parser.parse(current_command);
   process_parsed_command();
-  //report_current_position_detail();
 }
 
 /**
