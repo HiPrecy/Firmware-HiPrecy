@@ -2028,6 +2028,7 @@ static void dwin_file_select(const char *name,const char *longname) {
     #if !defined(FILE_PRINT_NEED_CONRIRM)
       card.startFileprint();
       print_job_timer.start();
+      lcd_icon_state = 0;
     #endif
     
     //char*t = strchr(sdFileName, '.');
