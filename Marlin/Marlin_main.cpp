@@ -563,6 +563,9 @@ uint8_t target_extruder;
 
 #if HAS_BED_PROBE
   float zprobe_zoffset; // Initialized by settings.load()
+  #if ENABLED(CENTER_ADJUST_ZOFFSET)
+    float zprobe_zoffset_last = 0;
+  #endif
 #endif
 
 #if HAS_ABL

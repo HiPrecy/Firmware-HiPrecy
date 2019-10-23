@@ -169,6 +169,10 @@ static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0
 
 #define     VARVAL_TOOL_CALIBRATE_Z                 0x006C
 
+#define     VARVAL_TOOL_ADJUST_ZOFFSET              0x0070
+#define     VARVAL_TOOL_ADJUST_ZOFFSET_CONFIRM      0x0071
+#define     VARVAL_TOOL_ADJUST_ZOFFSET_BACK         0x0072
+
 // Print
 #define     VARADDR_PRINT                           0x1701
 

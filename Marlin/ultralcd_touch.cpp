@@ -38,15 +38,16 @@ uint8_t lcd_status_update_delay = 1, // First update one loop delayed
        
 typedef void(*generalVoidFun)();
 
-static uint8_t ftState = 0x00;
-#define FTSTATE_NEED_LOAD_PARAM           0x01    // need to load paras from eeprom
-#define FTSTATE_NEED_SAVE_PARAM           0x02    // need to save paras to eeprom
-#define FTSTATE_EXECUTE_PERIOD_TASK_NOW   0x04    // excute the lcd period task immediatelly
-#define FTSTATE_SERVO_STATUS              0x08    // servo status
-#define FTSTATE_AUTOPID_ING               0x10    // auto pid
-#define FTSTATE_ACTIVE_WARNING            0x20    // 
-#define FTSTATE_STATUS_MESSAGE_NOW        0x40    // show the lcd status message immediatelly
-#define FTSTATE_FIRST_LAYER_CAL           0x80    // first layer cal
+static uint16_t ftState = 0x00;
+#define FTSTATE_NEED_LOAD_PARAM           0x0001    // need to load paras from eeprom
+#define FTSTATE_NEED_SAVE_PARAM           0x0002    // need to save paras to eeprom
+#define FTSTATE_EXECUTE_PERIOD_TASK_NOW   0x0004    // excute the lcd period task immediatelly
+#define FTSTATE_SERVO_STATUS              0x0008    // servo status
+#define FTSTATE_AUTOPID_ING               0x0010    // auto pid
+#define FTSTATE_ACTIVE_WARNING            0x0020    // 
+#define FTSTATE_STATUS_MESSAGE_NOW        0x0040    // show the lcd status message immediatelly
+#define FTSTATE_FIRST_LAYER_CAL           0x0080    // first layer cal
+#define FTSTATE_CENTER_ADJUST_ZOFFSET     0x0100    // center adjust zoffset
 
 #define TEMPERTURE_PREHEAT_CHOISE_E1_PLA    0
 #define TEMPERTURE_PREHEAT_CHOISE_E1_ABS    1
@@ -124,6 +125,10 @@ bool touch_lcd_aborting_print = false;
 
 #if ENABLED(FIRST_LAYER_CAL)
   static uint8_t first_layer_cal_step = 0;
+#endif
+
+#if ENABLED(CENTER_ADJUST_ZOFFSET)
+  static uint8_t center_adjust_step = 0;
 #endif
 
 #if ENABLED(TMC_Z_CALIBRATION)
@@ -1263,7 +1268,7 @@ void lcd_init() {
   lcd_boot_music();
 
   #ifdef BOOT_ANIMATION
-    lcd_set_page(BOOT_SCREEN_BEGIN_PAGE);
+    lcd_set_page_force(BOOT_SCREEN_BEGIN_PAGE);
   #endif
     
   #if FYSTLCD_PAGE_EXIST(MAIN)
@@ -1614,6 +1619,86 @@ static void lcd_task_first_layer_cal() {
 
 #endif
 
+#if ENABLED(CENTER_ADJUST_ZOFFSET)
+
+static int8_t enqueue_center_adjust_commands_P(const char * const pgcode) {
+  if(commands_in_queue < BUFSIZE) {
+    enqueue_and_echo_commands_P(pgcode);
+    return 0;
+  }
+  else {
+    return -1;
+  }
+}
+
+static bool center_adjust_leveling() {
+
+  static uint8_t i = 0;
+
+  static const char cmd_0[] PROGMEM = "G28";
+  static const char cmd_1[] PROGMEM = "G29";
+  static const char cmd_2[] PROGMEM = "G1 X150 Y150";
+  static const char cmd_3[] PROGMEM = "G1 Z0";
+  static const char cmd_4[] PROGMEM = "M84 XY";
+
+  static const char * const cmd[] PROGMEM = {
+    cmd_0, cmd_1, cmd_2, cmd_3, cmd_4,
+  };
+
+  for (; i < COUNT(cmd); ++i) {
+    if(0 > enqueue_center_adjust_commands_P(static_cast<char*>(pgm_read_ptr(&cmd[i])))) {
+      return false;
+    }
+  }
+
+  i = 0;
+  return true;
+}
+
+static void lcd_task_center_adjust_zoffset() {
+
+  if(ftState&FTSTATE_CENTER_ADJUST_ZOFFSET) {
+
+    if (!planner.has_blocks_queued() && commands_in_queue==0) {
+      switch(center_adjust_step) {
+      case 0:
+        if(center_adjust_leveling())
+          center_adjust_step = 1;
+        break;
+      case 1:
+        #if FYSTLCD_PAGE_EXIST(MANUAL_LEVELING)
+          lcd_set_page_force(FTPAGE(MANUAL_LEVELING));
+        #endif
+          center_adjust_step = 2;
+        break;
+      case 2:
+        break;
+      case 3:
+        enqueue_and_echo_commands_P(PSTR("G1 Z10"));
+        enqueue_and_echo_commands_P(PSTR("G28 XY"));
+        enqueue_and_echo_commands_P(PSTR("M500"));
+        center_adjust_step = 5;
+        break;
+      case 4:
+        enqueue_and_echo_commands_P(PSTR("G1 Z10"));
+        enqueue_and_echo_commands_P(PSTR("G28 XY"));
+        center_adjust_step = 5;
+        break;
+      case 5:
+        #if FYSTLCD_PAGE_EXIST(MAIN)
+          lcd_set_page_force(FTPAGE(MAIN));
+        #endif
+        center_adjust_step = 0;
+        ftState &= ~FTSTATE_CENTER_ADJUST_ZOFFSET;
+        break;
+      }
+	  }
+	}
+}
+
+#endif
+
+
 #if ENABLED(TMC_Z_CALIBRATION)
 void lcd_flag_calibrate_z_done() {
   if(lcd_calibrating_z) {
@@ -1641,6 +1726,10 @@ static void lcd_task() {
 
   #if ENABLED(FIRST_LAYER_CAL)
     lcd_task_first_layer_cal();
+  #endif
+
+  #if ENABLED(CENTER_ADJUST_ZOFFSET)
+    lcd_task_center_adjust_zoffset();
   #endif
 }
 
@@ -2310,11 +2399,13 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       #if HAS_HEATED_BED
         thermalManager.setTargetBed(0);
       #endif
-      if(ftState&FTSTATE_FIRST_LAYER_CAL) {
-        ftState &= ~FTSTATE_FIRST_LAYER_CAL;
-        first_layer_cal_step = 0;
-        lay1cal_init();
-      }
+      #if ENABLED(FIRST_LAYER_CAL)
+        if(ftState&FTSTATE_FIRST_LAYER_CAL) {
+          ftState &= ~FTSTATE_FIRST_LAYER_CAL;
+          first_layer_cal_step = 0;
+          lay1cal_init();
+        }
+      #endif
       break;
 
     #if ENABLED(BABYSTEPPING)
@@ -2328,8 +2419,10 @@ static void dwin_on_cmd_tool(uint16_t tval) {
           lcd_babystep_zoffset();
           break;
         case VARVAL_TOOL_BABYSTEP_Z_SAVE:
-          first_layer_cal_step = 2;
-          lay1cal_init();
+          #if ENABLED(FIRST_LAYER_CAL)
+            first_layer_cal_step = 2;
+            lay1cal_init();
+          #endif
           #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
             lcd_set_page(FTPAGE(INFO_WAITING));
           #endif
@@ -2346,7 +2439,41 @@ static void dwin_on_cmd_tool(uint16_t tval) {
         enqueue_and_echo_commands_P(PSTR("G28\nM915"));
       #endif
       break;
-      
+
+  #if ENABLED(CENTER_ADJUST_ZOFFSET)
+
+    case VARVAL_TOOL_ADJUST_ZOFFSET: {
+      #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+        dwin_popup(PSTR("   Leveling is in progress."),EPPT_INFO_WAITING);
+      #endif
+
+      zprobe_zoffset_last = zprobe_zoffset;
+      SERIAL_ECHOLNPAIR("zprobe_zoffset:",zprobe_zoffset);
+      move_dis = 0.1;
+      center_adjust_step = 0;
+      ftState |= FTSTATE_CENTER_ADJUST_ZOFFSET;
+    }
+    break;
+
+    case VARVAL_TOOL_ADJUST_ZOFFSET_CONFIRM: {
+      #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+        dwin_popup(PSTR("   Leveling is in progress."),EPPT_INFO_WAITING);
+      #endif
+			center_adjust_step = 3;
+    }
+    break;
+
+    case VARVAL_TOOL_ADJUST_ZOFFSET_BACK: {
+      #if FYSTLCD_PAGE_EXIST(INFO_WAITING)
+        dwin_popup(PSTR("   Leveling is in progress."),EPPT_INFO_WAITING);
+      #endif
+      zprobe_zoffset = zprobe_zoffset_last;
+      center_adjust_step = 4;
+    }
+    break;
+
+  #endif
+
     case VARVAL_TOOL_M999:
       Running = true;
       MYSERIAL0.flush();
@@ -3352,6 +3479,8 @@ static void dwin_on_cmd(millis_t& tNow) {
     }      
     break;
 
+#if ENABLED(FIRST_LAYER_CAL)
+
   case VARADDR_LAYER1_PREHEAT:
     if(tval > VARVAL_LAYER1_PREHEAT_EXTRU2) {
       enqueue_and_echo_commands_now_P(PSTR("G28 XY"));
@@ -3379,6 +3508,8 @@ static void dwin_on_cmd(millis_t& tNow) {
         break;
     }
     break;
+
+#endif
 
   case VARADDR_MOVE_DIS:
       move_dis = tval;

@@ -473,6 +473,9 @@ void report_current_position();
 
 #if HAS_BED_PROBE
   extern float zprobe_zoffset;
+  #if ENABLED(CENTER_ADJUST_ZOFFSET)
+    extern float zprobe_zoffset_last;
+  #endif
   bool set_probe_deployed(const bool deploy);
   #ifdef Z_AFTER_PROBING
     void move_z_after_probing();
