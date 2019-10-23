@@ -161,6 +161,8 @@
 
 #define BOARD_HIPRECY_LEO       543
 
+#define BOARD_I3PLUS3030        544
+
 #define MB(board) (defined(BOARD_##board) && MOTHERBOARD==BOARD_##board)
 
 #endif // __BOARDS_H

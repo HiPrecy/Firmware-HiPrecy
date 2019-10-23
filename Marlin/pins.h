@@ -269,6 +269,8 @@
   #include "pins_FYSETC_F6_14.h"
 #elif MB(HIPRECY_LEO)
   #include "pins_HIPRECY_LEO.h"
+#elif MB(I3PLUS3030)
+  #include "pins_I3PLUS3030.h"
 #else
   #error "Unknown MOTHERBOARD value set in Configuration.h"
 #endif
