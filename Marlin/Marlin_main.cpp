@@ -11275,7 +11275,7 @@ inline void gcode_M502() {
     #if ENABLED(ULTIPANEL)
       lcd_advanced_pause_show_message(ADVANCED_PAUSE_MESSAGE_INIT, ADVANCED_PAUSE_MODE_PAUSE_PRINT, target_extruder);
     #elif ENABLED(TOUCH_LCD)			
-      dwin_popup(PSTR("        Filament runout!\nWait for start of filament change."),EPPT_INFO_WAITING);
+      dwin_popup(PSTR("        Filament runout!\nWait for start of change process."),EPPT_INFO_WAITING);
     #endif
 
     #if ENABLED(HOME_BEFORE_FILAMENT_CHANGE)
