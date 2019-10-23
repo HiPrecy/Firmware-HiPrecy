@@ -44,7 +44,7 @@ static const uint8_t FILE_WINDOW_SIZE = sizeof(VARADDR_FILES_NAME) / sizeof(VARA
 // Pop up info menu
 #define     INFOS_NUM                               4
 static const uint16_t VARADDR_POP_INFOS[INFOS_NUM] = { 0x1180, 0x1190, 0x11A0, 0x11B0 };
-#define     INFO_POPUP_LEN                          16
+#define     INFO_POPUP_LEN                          32
 
 // Parameters
 #define     VARADDR_PARAM_TUNE                      0x1200  // 1200~1205:temp 1206~120A:fan
