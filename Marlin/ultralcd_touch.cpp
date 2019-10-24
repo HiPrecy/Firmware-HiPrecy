@@ -2195,6 +2195,11 @@ static void dwin_on_cmd_tool(uint16_t tval) {
       #if HAS_TEMP_BED
         thermalManager.setTargetBed(0);
       #endif
+      dwin_update_e0_status();
+      #if EXTRUDERS > 1
+        dwin_update_e1_status();
+      #endif
+      dwin_update_bed_status();
       break;
 
     case VARVAL_TOOL_PREHEAT_SWITHCH_E1:
