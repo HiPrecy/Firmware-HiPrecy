@@ -186,6 +186,12 @@
           ftCmdGetI16(t);
           r = t / FYSTLCD_DOT_TEN_MUL;
         }
+
+        inline void ftCmdGetF16_2(float& r) {
+          int16_t t;
+          ftCmdGetI16(t);
+          r = t / FYSTLCD_DOT_HUND_MUL;
+        }
         
         inline void ftCmdGetI32(int32_t& r) {
           r = cdt[n++];

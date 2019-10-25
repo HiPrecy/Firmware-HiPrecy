@@ -779,7 +779,7 @@ static void dwin_read_zoffset_para() {
   myFysTLcd.ftCmdStart(VARADDR_PARAM_ZOFFSET);
   if (myFysTLcd.ftCmdReceive(2)) {
     #if HAS_BED_PROBE
-      myFysTLcd.ftCmdPutF16_2(zprobe_zoffset);
+      myFysTLcd.ftCmdGetF16_2(zprobe_zoffset);
     #endif
   }
 }
