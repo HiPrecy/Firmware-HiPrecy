@@ -369,15 +369,15 @@ bool lay1cal_square_loop(char *cmd_buffer, uint8_t i1, uint8_t i2) {
 bool lay1cal_end() {
   //static uint8_t i = 0;
 
-  static const char cmd_end_0[] PROGMEM = "M107";
-  static const char cmd_end_1[] PROGMEM = "G1 E-0.07500 F2100.00000";
-  static const char cmd_end_2[] PROGMEM = "M104 S0";
-  static const char cmd_end_3[] PROGMEM = "M140 S0";
-  static const char cmd_end_4[] PROGMEM = "G1 Z10 F1300.000";
-  static const char cmd_end_5[] PROGMEM = "G1 X10 Y180 F4000";
-  //static const char cmd_end_5[] PROGMEM = "G28";
-  static const char cmd_end_6[] PROGMEM = "M84";
-  static const char cmd_end_7[] PROGMEM = "M500";
+  static const char cmd_end_0[] PROGMEM = "M500";
+  static const char cmd_end_1[] PROGMEM = "M107";
+  static const char cmd_end_2[] PROGMEM = "G1 E-0.07500 F2100.00000";
+  static const char cmd_end_3[] PROGMEM = "M104 S0";
+  static const char cmd_end_4[] PROGMEM = "M140 S0";
+  static const char cmd_end_5[] PROGMEM = "G1 Z10 F1300.000";
+  static const char cmd_end_6[] PROGMEM = "G1 X10 Y180 F4000";
+  //static const char cmd_end_6[] PROGMEM = "G28";
+  static const char cmd_end_7[] PROGMEM = "M84";
   
   static const char * const cmd_end[] PROGMEM = {
     cmd_end_0,
@@ -387,11 +387,12 @@ bool lay1cal_end() {
     cmd_end_4,
     cmd_end_5,
     cmd_end_6,
+    cmd_end_7
   };
 
   for (; i < COUNT(cmd_end); ++i) {
     /*
-    if (5 == i && mmu_enabled) { 
+    if (6 == i && mmu_enabled) { 
       if(0 > enqueue_layre1cal_commands_P(PSTR("M702 C"))) {
         return false;
       }
