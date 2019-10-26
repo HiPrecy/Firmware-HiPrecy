@@ -75,6 +75,7 @@ static uint16_t ftState = 0x00;
 #define TEMPERTURE_PREHEAT_CHOISE_BED_CUSTOM 23
 
 char filament_choice = 0;
+uint8_t unload_purge_times;
 char optionId = 0;
 uint16_t currentPageId = 0xFFFF, retPageId = 0xFFFF;
 uint16_t dwinFileWindowTopIndex = 0;
@@ -2046,8 +2047,16 @@ static void filament_unload() {
 
     #if FYSTLCD_PAGE_EXIST(FILAMENT_UNLOADING)
       lcd_set_page_force(FTPAGE(FILAMENT_UNLOADING));
-    #endif 
-    current_position[E_AXIS] -= MOVE_E_LENGTH_EACH_TIME;
+    #endif
+
+    if(unload_purge_times < 2) {
+      current_position[E_AXIS] += MOVE_E_LENGTH_EACH_TIME;
+      unload_purge_times++;
+    }
+    else {
+      current_position[E_AXIS] -= MOVE_E_LENGTH_EACH_TIME;
+      unload_purge_times = 0;
+    }
     planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], \
                         current_position[E_AXIS], MOVE_E_FEEDRATE, extru_index);
   }
@@ -3422,6 +3431,7 @@ static void dwin_on_cmd(millis_t& tNow) {
     
   case VARADDR_FILAMENT_AUTO_REMOVE:
     if(tval > VARVAL_FILAMENT_OPE_EXTRU2) {
+      unload_purge_times = 0;
       enqueue_and_echo_commands_P(PSTR("G28 XY"));
     }
     switch (tval) {
