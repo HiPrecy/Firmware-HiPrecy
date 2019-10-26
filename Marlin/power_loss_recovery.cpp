@@ -138,8 +138,6 @@ void check_print_job_recovery() {
       if (job_recovery_info.valid_head && job_recovery_info.valid_head == job_recovery_info.valid_foot) {
 
         uint8_t ind = 0;
-
-        
         char str_1[16], str_2[16];
 
         dtostrf(job_recovery_info.current_position[Z_AXIS], 1, 3, str_1);
@@ -153,6 +151,7 @@ void check_print_job_recovery() {
           " X Y"                                                                  // Home X and Y for Cartesian
         #endif
         ));
+        sprintf_P(job_recovery_commands[ind++], PSTR("G93 XYZ"));
         sprintf_P(job_recovery_commands[ind++], PSTR("G0 Z%s"), str_1);        
 
         /*

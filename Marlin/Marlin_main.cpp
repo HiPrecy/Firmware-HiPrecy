@@ -6779,6 +6779,19 @@ inline void gcode_G92() {
   report_current_position();
 }
 
+/**
+ * G92: Set axis at home
+ */
+inline void gcode_G93() {
+  const bool setX = parser.seen('X'),
+             setY = parser.seen('Y'),
+             setZ = parser.seen('Z');
+
+  if(setX) SBI(axis_homed, X_AXIS);
+  if(setY) SBI(axis_homed, Y_AXIS);
+  if(setZ) SBI(axis_homed, Z_AXIS);
+}
+
 #if ENABLED(MECHADUINO_I2C_COMMANDS)
   /**
    * G95: Set torque mode
@@ -13038,6 +13051,7 @@ void process_parsed_command() {
       case 91: relative_mode = true; break;                       // G91: Relative coordinates
 
       case 92: gcode_G92(); break;                                // G92: Set Position
+      case 93: gcode_G93(); break;                                // G92: Set Homed status
       #if ENABLED(MECHADUINO_I2C_COMMANDS)
         case 95: gcode_G95(); break;                                // G95: Set torque mode
         case 96: gcode_G96(); break;                                // G96: Mark encoder reference point
