@@ -3362,16 +3362,16 @@ static void homeaxis(const AxisEnum axis) {
     if (axis == Z_AXIS && set_bltouch_deployed(true)) return;
   #endif
 
-  #if ENABLED(SENSORLESS_HOMING)
-    #if ENABLED(X_HOMING_SENSITIVITY)
-      if (axis == X_AXIS)
-        do_homing_move(axis, 3.0f * -axis_home_dir);
-    #endif
-
-    #if ENABLED(Y_HOMING_SENSITIVITY)
-      if (axis == Y_AXIS)
-        do_homing_move(axis, 3.0f * -axis_home_dir);
-    #endif
+  #if X_SENSORLESS
+    if (axis == X_AXIS) {
+      do_homing_move(axis, -5.0f * axis_home_dir, 20);
+    }
+  #endif
+  
+  #if Y_SENSORLESS
+    if (axis == Y_AXIS) {
+      do_homing_move(axis, -5.0f * axis_home_dir, 20);
+    }
   #endif
 
   do_homing_move(axis, 1.5f * max_length(axis) * axis_home_dir);
