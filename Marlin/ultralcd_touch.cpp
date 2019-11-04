@@ -2055,7 +2055,6 @@ static void filament_unload() {
     }
     else {
       current_position[E_AXIS] -= MOVE_E_LENGTH_EACH_TIME;
-      unload_purge_times = 0;
     }
     planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], \
                         current_position[E_AXIS], MOVE_E_FEEDRATE, extru_index);
