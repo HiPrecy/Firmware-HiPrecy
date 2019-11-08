@@ -1962,16 +1962,6 @@ static int16_t filament_temp_preheat(bool ifHeatBed = false) {
     else { 
       thermalManager.setTargetHotend(tempe, extruder_index);
     }
-    
-    #if FAN_COUNT > 0
-    if(extruder_index<FAN_COUNT) {
-      #if EXTRUDERS>1
-        fanSpeeds[extruder_index] = lcd_preheat_fan_speed[filament_choice-FILAMENTS];
-      #else
-        fanSpeeds[extruder_index] = lcd_preheat_fan_speed[filament_choice];
-      #endif
-    }
-    #endif
 
     myFysTLcd.ftCmdStart(VARADDR_ACTIVE_EXTRUDER_HOTEND);
     myFysTLcd.ftCmdPut16(tempe);    
