@@ -346,6 +346,13 @@ namespace ExtUI {
   #if HAS_PID_HEATING
     void OnPidTuning(const result_t rst);
   #endif
+  #if ENABLED(SINGLE_Z_CALIBRATION)  
+    void OnSigleZCalibrationDone();
+  #endif
+  #if ENABLED(FIRST_LAYER_CAL)
+    void OnLayer1PreheatDone();
+    void OnLayer1Done();
+  #endif
 };
 
 /**

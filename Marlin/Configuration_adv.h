@@ -1325,6 +1325,15 @@
   #endif
 #endif // HAS_DGUS_LCD
 
+// M915
+#define SINGLE_Z_CALIBRATION
+#if ENABLED(SINGLE_Z_CALIBRATION)
+  #define CALIBRATION_CURRENT 1000
+  #define CALIBRATION_EXTRA_HEIGHT 30
+#endif
+
+#define FIRST_LAYER_CAL
+
 //
 // Touch UI for the FTDI Embedded Video Engine (EVE)
 //
@@ -2313,7 +2322,7 @@
    * IMPROVE_HOMING_RELIABILITY tunes acceleration and jerk when
    * homing and adds a guard period for endstop triggering.
    */
-  //#define SENSORLESS_HOMING // StallGuard capable drivers only
+  #define SENSORLESS_HOMING // StallGuard capable drivers only
 
   #if EITHER(SENSORLESS_HOMING, SENSORLESS_PROBING)
     // TMC2209: 0...255. TMC2130: -64...63

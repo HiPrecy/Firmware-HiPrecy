@@ -810,6 +810,11 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 917: M917(); break;                                   // M917: L6470 tuning: Find minimum current thresholds
         case 918: M918(); break;                                   // M918: L6470 tuning: Increase speed until max or error
       #endif
+      
+      #if ENABLED(SINGLE_Z_CALIBRATION)
+        case 915: M915(); break;                                     // M915: For single Z calibration
+        case 920: M920(); break;
+      #endif
 
       #if HAS_MICROSTEPS
         case 350: M350(); break;                                  // M350: Set microstepping mode. Warning: Steps per unit remains unchanged. S code sets stepping mode for all drivers.

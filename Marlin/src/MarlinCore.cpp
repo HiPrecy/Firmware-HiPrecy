@@ -181,6 +181,10 @@
   #include "libs/L64XX/L64XX_Marlin.h"
 #endif
 
+#if ENABLED(FIRST_LAYER_CAL)
+  #include "feature/first_lay_cal.h"
+#endif
+
 const char NUL_STR[] PROGMEM = "",
            M112_KILL_STR[] PROGMEM = "M112 Shutdown",
            G28_STR[] PROGMEM = "G28",
@@ -695,6 +699,10 @@ void idle(
 
   #if ENABLED(MAX7219_DEBUG)
     max7219.idle_tasks();
+  #endif
+  
+  #if ENABLED(FIRST_LAYER_CAL)
+    layer1Cal.task();
   #endif
 
   ui.update();
