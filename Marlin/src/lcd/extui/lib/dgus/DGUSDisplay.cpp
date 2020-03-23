@@ -30,10 +30,6 @@
   #error "More than 2 hotends not implemented on the Display UI design."
 #endif
 
-#include "DGUSDisplay.h"
-#include "DGUSVPVariable.h"
-#include "DGUSDisplayDef.h"
-
 #include "../../ui_api.h"
 
 #include "../../../../MarlinCore.h"
@@ -50,6 +46,11 @@
 #if ENABLED(FIRST_LAYER_CAL)
   #include "../../../../feature/first_lay_cal.h"
 #endif
+
+#include "DGUSDisplay.h"
+#include "DGUSVPVariable.h"
+#include "DGUSDisplayDef.h"
+
 
 // Preamble... 2 Bytes, usually 0x5A 0xA5, but configurable
 constexpr uint8_t DGUS_HEADER1 = 0x5A;
@@ -858,7 +859,7 @@ void DGUSScreenVariableHandler::HandleStepPerMMExtruderChanged(DGUS_VP_Variable 
 void DGUSScreenVariableHandler::HandleProbeOffsetZChanged(DGUS_VP_Variable &var, void *val_ptr) {
   DEBUG_ECHOLNPGM("HandleProbeOffsetZChanged");
 
-  const float offset = float(swap16(*(uint16_t*)val_ptr)) / 100.0f;
+  const float offset = float(int16_t(swap16(*(uint16_t*)val_ptr))) / 100.0f;
   ExtUI::setZOffset_mm(offset);
   ScreenHandler.skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
   return;
