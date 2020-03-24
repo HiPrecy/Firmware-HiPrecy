@@ -1314,7 +1314,7 @@
     #define DGUS_FILAMENT_LOADUNLOAD
     #if ENABLED(DGUS_FILAMENT_LOADUNLOAD)
       #define DGUS_FILAMENT_PURGE_LENGTH 10
-      #define DGUS_FILAMENT_LOAD_LENGTH_PER_TIME 0.5 // (mm) Adjust in proportion to DGUS_UPDATE_INTERVAL_MS
+      #define DGUS_FILAMENT_LOAD_LENGTH_PER_TIME 0.3 // (mm) Adjust in proportion to DGUS_UPDATE_INTERVAL_MS
     #endif
 
     #define DGUS_UI_WAITING               // Show a "waiting" screen between some screens
