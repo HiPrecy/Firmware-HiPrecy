@@ -620,7 +620,7 @@ void DGUSScreenVariableHandler::HandleManualMove(DGUS_VP_Variable &var, void *va
   int16_t movevalue = swap16(*(uint16_t*)val_ptr);
   #if ENABLED(DGUS_UI_MOVE_DIS_OPTION)
     const uint16_t choice = *(uint16_t*)var.memadr;
-    movevalue = movevalue > 0 ? choice : -choice;
+    movevalue = movevalue > 0 ? choice : (movevalue < 0 ? -choice : 0);
   #endif
   char axiscode;
   unsigned int speed = 1500;  //FIXME: get default feedrate for manual moves, dont hardcode.
