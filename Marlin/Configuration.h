@@ -499,9 +499,9 @@
   //#define DEFAULT_Ki 2.25
   //#define DEFAULT_Kd 440
 
-  #define DEFAULT_Kp 14.67
-  #define DEFAULT_Ki 0.85
-  #define DEFAULT_Kd 63.08
+  #define DEFAULT_Kp 18.09
+  #define DEFAULT_Ki 1.19
+  #define DEFAULT_Kd 68.56
 #endif // PIDTEMP
 
 //===========================================================================
@@ -549,9 +549,9 @@
   //#define DEFAULT_bedKi 1.41
   //#define DEFAULT_bedKd 1675.16
   //from pidautotune
-  #define DEFAULT_bedKp 55.81
-  #define DEFAULT_bedKi 3.00
-  #define DEFAULT_bedKd 259.45
+  #define DEFAULT_bedKp 20.0
+  #define DEFAULT_bedKi 1.00
+  #define DEFAULT_bedKd 245.5
 
   // FIND YOUR OWN: "M303 E-1 C8 S90" to run autotune on the bed at 90 degreesC for 8 cycles.
 #endif // PIDTEMPBED
