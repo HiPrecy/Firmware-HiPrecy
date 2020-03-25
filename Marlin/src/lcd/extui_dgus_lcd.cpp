@@ -148,7 +148,8 @@ namespace ExtUI {
           ScreenHandler.setstatusmessagePGM(PSTR(STR_PID_AUTOTUNE_FINISHED));
           break;
       }
-      ScreenHandler.GotoScreen(DGUSLCD_SCREEN_MAIN);
+      if(rst == PID_DONE) ScreenHandler.GotoScreen(DGUSLCD_SCREEN_PID_SAVE);
+      else ScreenHandler.GotoScreen(DGUSLCD_SCREEN_MAIN);
     }
   #endif
 

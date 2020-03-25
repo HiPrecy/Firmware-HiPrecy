@@ -41,6 +41,7 @@ enum DGUSLCD_Screens : uint8_t {
   DGUSLCD_SCREEN_SDPRINTTUNE          =   9,
   DGUSLCD_SCREEN_FLC_PREHEAT          =  94,
   DGUSLCD_SCREEN_FLC_PRINTING         =  96,
+  DGUSLCD_SCREEN_PID_SAVE             = 104,
   DGUSLCD_SCREEN_STEPPERMM            = 122,
   DGUSLCD_SCREEN_PID_E                = 126,
   DGUSLCD_SCREEN_PID_BED              = 128,
