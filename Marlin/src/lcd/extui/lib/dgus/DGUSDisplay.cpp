@@ -63,6 +63,8 @@ constexpr uint8_t DGUS_CMD_READVAR = 0x83;
   bool dguslcd_local_debug; // = false;
 #endif
 
+bool print_finishing = false;
+
 #if ENABLED(DGUS_FILAMENT_LOADUNLOAD)
   typedef struct  {
     ExtUI::extruder_t extruder; // which extruder to operate
@@ -517,6 +519,12 @@ void DGUSScreenVariableHandler::ScreenChangeHook(DGUS_VP_Variable &var, void *va
     // special handling for popup is to return to previous menu
     if (current_screen == DGUSLCD_SCREEN_POPUP && confirm_action_cb) confirm_action_cb();
     PopToOldScreen();
+    #if EITHER(DGUS_LCD_UI_FYSETC,DGUS_LCD_UI_HIPRECY)
+      if (print_finishing) {
+        ScreenHandler.GotoScreen(DGUSLCD_SCREEN_STATUS);
+        print_finishing = false;
+      }
+    #endif
     return;
   }
 

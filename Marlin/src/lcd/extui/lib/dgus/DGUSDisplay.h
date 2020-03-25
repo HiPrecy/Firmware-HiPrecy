@@ -43,6 +43,8 @@ typedef enum : uint8_t {
   DGUS_WAIT_TELEGRAM,  //< LEN received, Waiting for to receive all bytes.
 } rx_datagram_state_t;
 
+extern bool print_finishing;
+
 // Low-Level access to the display.
 class DGUSDisplay {
 public:

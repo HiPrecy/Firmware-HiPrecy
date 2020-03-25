@@ -181,6 +181,10 @@
   #include "libs/L64XX/L64XX_Marlin.h"
 #endif
 
+#if ENABLED(EXTENSIBLE_UI)
+  #include "lcd/extui/ui_api.h"
+#endif
+
 #if ENABLED(FIRST_LAYER_CAL)
   #include "feature/first_lay_cal.h"
 #endif
@@ -427,6 +431,9 @@ void startOrResumeJob() {
     switch (card.sdprinting_done_state) {
 
       case 1:
+        #if ENABLED(EXTENSIBLE_UI)
+          ExtUI::onPrintFinishing();
+        #endif
         did_state = print_job_timer.duration() < 60 || queue.enqueue_one_P(PSTR("M31"));
         break;
 

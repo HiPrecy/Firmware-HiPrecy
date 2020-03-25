@@ -353,6 +353,7 @@ namespace ExtUI {
     void OnLayer1PreheatDone();
     void OnLayer1Done();
   #endif
+  void onPrintFinishing();
 };
 
 /**

@@ -168,5 +168,9 @@ namespace ExtUI {
       ScreenHandler.GotoScreen(DGUSLCD_SCREEN_UTILITY);
     }
   #endif
+
+  void onPrintFinishing() {
+    print_finishing = true;
+  }
 }
 #endif // HAS_DGUS_LCD
