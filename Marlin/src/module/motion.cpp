@@ -1547,7 +1547,7 @@ void homeaxis(const AxisEnum axis) {
   #if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
     if (axis == Z_AXIS && bltouch.deploy()) return; // The initial DEPLOY
   #endif
-
+/*
   #if X_SENSORLESS
     if (axis == X_AXIS) {
       do_homing_move(axis, -5.0f * axis_home_dir, 20);
@@ -1557,6 +1557,13 @@ void homeaxis(const AxisEnum axis) {
   #if Y_SENSORLESS
     if (axis == Y_AXIS) {
       do_homing_move(axis, -5.0f * axis_home_dir, 20);
+    }
+  #endif
+*/
+  #if DISABLED(DELTA) && defined(HOMING_FIRST_BACKOFF_MM)
+    const xy_float_t backoff = HOMING_FIRST_BACKOFF_MM;
+    if (((ENABLED(X_SENSORLESS) && axis == X_AXIS) || (ENABLED(Y_SENSORLESS) && axis == Y_AXIS)) && backoff[axis]) {
+        do_homing_move(axis, -ABS(backoff[axis]) * axis_home_dir, homing_feedrate(axis));
     }
   #endif
 
