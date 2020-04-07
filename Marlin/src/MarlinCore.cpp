@@ -1006,7 +1006,7 @@ void setup() {
     SETUP_RUN(ui.show_bootscreen());
   #endif
 
-  #if ENABLED(SDSUPPORT) && defined(SDCARD_CONNECTION) && !SD_CONNECTION_IS(LCD)
+  #if ENABLED(SDSUPPORT) && ((defined(SDCARD_CONNECTION) && !SD_CONNECTION_IS(LCD)) || ENABLED(POWER_LOSS_RECOVERY))
     SETUP_RUN(card.mount());          // Mount onboard / custom SD card before settings.first_load
   #endif
 
