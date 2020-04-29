@@ -879,7 +879,7 @@ void DGUSScreenVariableHandler::HandleProbeOffsetZChanged(DGUS_VP_Variable &var,
     DEBUG_ECHOLNPGM("HandleLiveAdjustZ");
 
     int16_t flag = swap16(*(uint16_t*)val_ptr);
-    int16_t steps = flag ? -20 : 20;
+    int16_t steps = flag ? -8 : 8;
     ExtUI::smartAdjustAxis_steps(steps, ExtUI::axis_t::Z, true);
     ScreenHandler.ForceCompleteUpdate();
     return;
