@@ -1,4 +1,4 @@
-#include "../inc/MarlinConfig.h"
+#include "../inc/MarlinConfigPre.h"
 
 #ifdef FIRST_LAYER_CAL
 
@@ -9,25 +9,30 @@
   #include "../lcd/extui/ui_api.h"
 #endif
 
+void quickstop_stepper();
+
 FirstLayerCalculate layer1Cal;
 
 void FirstLayerCalculate::start(uint8_t option) {
-  flag = true;  
+  DEBUG_ECHOLNPGM("Layer1 task start");
+
+  run = true;  
   if(option > 4) option = 0; // Only 4 filaments supported
   filament = option;
   step = 0;  
 }
 
 void FirstLayerCalculate::stop() {
-  queue.clear();
+  DEBUG_ECHOLNPGM("Layer1 task stop");
+
   #if HOTENDS >= 1
     thermalManager.setTargetHotend(0, 0);
   #endif
   #if HAS_HEATED_BED
     thermalManager.setTargetBed(0);
   #endif
-  step = 0;  
-  flag = false;
+  run = false;
+  step = 0;
   i = 0;
   j = 0;
   #if ENABLED(EXTENSIBLE_UI)
@@ -36,15 +41,16 @@ void FirstLayerCalculate::stop() {
 }
 
 void FirstLayerCalculate::quit() {
+  DEBUG_ECHOLNPGM("Layer1 task quit");
+
   if(step >= 7) return;
-  queue.clear();
   i = 0;
   j = 0;
   step = 7;
 }
 
-void FirstLayerCalculate::task(void) {
-  if(!flag) return;
+void FirstLayerCalculate::task_step(void) {
+  if(!run) return;
 
 	char cmd1[30];
 
@@ -53,6 +59,7 @@ void FirstLayerCalculate::task(void) {
 
   if (ELAPSED(ms, next_task_ms)) {
     next_task_ms = ms + TASK_INTERVAL_MS;
+    DEBUG_ECHOLNPGM("task step");
     if (!queue.has_commands_queued()) {
       switch(step) {
       case 0:
@@ -101,10 +108,18 @@ void FirstLayerCalculate::task(void) {
         step = 0;
         i = 0;
         j = 0;
-        flag = false;        
+        run = false;        
         break;
       }
     }
+  }
+}
+
+void FirstLayerCalculate::task(void) {
+  if (!no_reentrance) {
+    no_reentrance = true;
+    task_step();
+    no_reentrance = false;
   }
 }
 

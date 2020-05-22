@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#define DEBUG_LAYER1CAL
+//#define DEBUG_LAYER1CAL
 #define DEBUG_OUT ENABLED(DEBUG_LAYER1CAL)
 #include "../core/debug_out.h"
 
@@ -14,7 +14,7 @@
 
 class FirstLayerCalculate {
   public:
-    FirstLayerCalculate():flag(false),i(0),j(0),  step(0),filament(0){};
+    FirstLayerCalculate():no_reentrance(false),run(false),i(0),j(0),  step(0),filament(0){};
     void start(uint8_t option);
     void stop();
     void quit();
@@ -31,9 +31,11 @@ class FirstLayerCalculate {
     bool print_square(char *cmd_buffer, uint8_t i);
     bool print_all_square(char *cmd_buffer, uint8_t i1, uint8_t i2);
     bool end();
+    void task_step(void);
 
   private:
-    bool flag;
+    bool run;
+    bool no_reentrance;
     uint8_t i;
     uint8_t j;
     uint8_t step;
