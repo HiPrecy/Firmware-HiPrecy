@@ -130,6 +130,9 @@ static bool ensure_safe_temperature(const PauseMode mode=PAUSE_MODE_SAME) {
   #else
     UNUSED(mode);
   #endif
+  #if ENABLED(EXTENSIBLE_UI)
+    ExtUI::onStatusChanged("Ensuring safe temperture");
+  #endif
 
   return thermalManager.wait_for_hotend(active_extruder);
 }
@@ -208,6 +211,9 @@ bool load_filament(const float &slow_load_length/*=0*/, const float &fast_load_l
 
   #if HAS_LCD_MENU
     if (show_lcd) lcd_pause_show_message(PAUSE_MESSAGE_LOAD, mode);
+  #endif
+  #if ENABLED(EXTENSIBLE_UI)
+      ExtUI::onStatusChanged("Loading Filament");
   #endif
 
   #if ENABLED(DUAL_X_CARRIAGE)
@@ -329,6 +335,9 @@ bool unload_filament(const float &unload_length, const bool show_lcd/*=false*/,
 
   #if HAS_LCD_MENU
     if (show_lcd) lcd_pause_show_message(PAUSE_MESSAGE_UNLOAD, mode);
+  #endif
+  #if ENABLED(EXTENSIBLE_UI)
+    ExtUI::onStatusChanged("Unloading Filament");
   #endif
 
   // Retract filament
@@ -514,6 +523,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
   #endif
   #if ENABLED(EXTENSIBLE_UI)
     ExtUI::onUserConfirmRequired_P(PSTR("Nozzle Parked"));
+    ExtUI::onStatusChanged("Wait for user confirm");
   #endif
   while (wait_for_user) {
     #if HAS_BUZZER
@@ -547,7 +557,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
         host_prompt_do(PROMPT_INFO, PSTR("Reheating"));
       #endif
       #if ENABLED(EXTENSIBLE_UI)
-        ExtUI::onStatusChanged(PSTR("Reheating..."));
+        ExtUI::onStatusChanged("Reheating...");
       #endif
 
       // Re-enable the heaters if they timed out
