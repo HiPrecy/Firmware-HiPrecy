@@ -299,7 +299,7 @@ public:
 
 private:
   static DGUSLCD_Screens current_screen;  ///< currently on screen
-  static constexpr uint8_t NUM_PAST_SCREENS = 4;
+  static constexpr uint8_t NUM_PAST_SCREENS = 6;
   static DGUSLCD_Screens past_screens[NUM_PAST_SCREENS]; ///< LIFO with past screens for the "back" button.
 
   static uint8_t update_ptr;    ///< Last sent entry in the VPList for the actual screen.

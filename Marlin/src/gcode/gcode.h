@@ -855,6 +855,7 @@ private:
 
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
     static void M600();
+    static void M601();
     static void M603();
   #endif
 

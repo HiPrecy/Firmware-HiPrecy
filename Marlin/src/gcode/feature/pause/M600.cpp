@@ -45,6 +45,11 @@
   #include "../../../feature/mixing.h"
 #endif
 
+#if ENABLED(EXTENSIBLE_UI)
+  #include "../../../lcd/extui/ui_api.h"
+#endif
+
+
 /**
  * M600: Pause for filament change
  *
@@ -175,6 +180,12 @@ void GcodeSuite::M600() {
 
   #if ENABLED(MIXING_EXTRUDER)
     mixer.T(old_mixing_tool); // Restore original mixing tool
+  #endif
+}
+
+void GcodeSuite::M601() {
+  #if ENABLED(EXTENSIBLE_UI)
+    ExtUI::onFilamentRunoutDone(ExtUI::getActiveTool());
   #endif
 }
 

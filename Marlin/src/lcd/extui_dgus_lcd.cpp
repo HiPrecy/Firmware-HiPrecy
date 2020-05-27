@@ -71,7 +71,16 @@ namespace ExtUI {
   void onPrintTimerStarted() {}
   void onPrintTimerPaused() {}
   void onPrintTimerStopped() {}
-  void onFilamentRunout(const extruder_t extruder) {}
+  void onFilamentRunout(const extruder_t extruder) {
+     #if ENABLED(DGUS_UI_WAITING)
+      ScreenHandler.sendinfoscreen(PSTR("Runout processing"), PSTR("Please wait"), NUL_STR, NUL_STR, true, true, true, true);
+      ScreenHandler.GotoScreen(DGUSLCD_SCREEN_WAITING);
+    #endif
+  }
+
+  void onFilamentRunoutDone(const extruder_t extruder) {
+    ScreenHandler.GotoScreen(DGUSLCD_SCREEN_SDPRINTMANIPULATION);
+  }
 
   void onUserConfirmRequired(const char * const msg) {
     if (msg) {
