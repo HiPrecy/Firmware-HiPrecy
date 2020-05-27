@@ -840,18 +840,18 @@ void DGUSScreenVariableHandler::HandleStepPerMMExtruderChanged(DGUS_VP_Variable 
       #if ENABLED(PIDTEMP)
         #if HOTENDS >= 1
           case VP_PID_AUTOTUNE_E0: // Autotune Extruder 0
-            sprintf(buf, "M303 E%d C5 S210 U1", ExtUI::extruder_t::E0);
+            sprintf(buf, "M303 E%d C12 S210 U1", ExtUI::extruder_t::E0);
             break;
         #endif
         #if HOTENDS >= 2
           case VP_PID_AUTOTUNE_E1:
-            sprintf(buf, "M303 E%d C5 S210 U1", ExtUI::extruder_t::E1);
+            sprintf(buf, "M303 E%d C12 S210 U1", ExtUI::extruder_t::E1);
             break;
         #endif
       #endif
       #if ENABLED(PIDTEMPBED)
         case VP_PID_AUTOTUNE_BED:
-          sprintf(buf, "M303 E-1 C5 S70 U1");
+          sprintf(buf, "M303 E-1 C12 S70 U1");
           break;
       #endif
     }
