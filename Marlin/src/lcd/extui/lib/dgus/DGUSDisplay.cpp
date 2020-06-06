@@ -51,6 +51,8 @@
 #include "DGUSVPVariable.h"
 #include "DGUSDisplayDef.h"
 
+#define FILAMENT_LOAD_FEEDRATE 2.0
+#define FILAMENT_UNLOAD_FEEDRATE 15.0
 
 // Preamble... 2 Bytes, usually 0x5A 0xA5, but configurable
 constexpr uint8_t DGUS_HEADER1 = 0x5A;
@@ -1070,12 +1072,15 @@ void DGUSScreenVariableHandler::HandleHeaterControl(DGUS_VP_Variable &var, void 
     if (thermalManager.hotEnoughToExtrude(filament_data.extruder) && \
        thermalManager.targetHotEnoughToExtrude(filament_data.extruder)) {
       float movevalue = DGUS_FILAMENT_LOAD_LENGTH_PER_TIME;
+      feedRate_t feedrate = 1.0;
 
       if (filament_data.action == 1) { // load filament
         if (!filament_data.heated) {
           GotoScreen(DGUSLCD_SCREEN_FILAMENT_LOADING);
           filament_data.heated = true;
         }
+        feedrate = FILAMENT_LOAD_FEEDRATE;
+        movevalue = DGUS_FILAMENT_LOAD_LENGTH_PER_TIME*FILAMENT_LOAD_FEEDRATE;
         movevalue = ExtUI::getAxisPosition_mm(filament_data.extruder)+movevalue;
       }
       else { // unload filament
@@ -1085,13 +1090,16 @@ void DGUSScreenVariableHandler::HandleHeaterControl(DGUS_VP_Variable &var, void 
         }
         // Before unloading extrude to prevent jamming
         if (filament_data.purge_length >= 0) {
-          movevalue = ExtUI::getAxisPosition_mm(filament_data.extruder) + movevalue;
           filament_data.purge_length -= movevalue;
+          movevalue = ExtUI::getAxisPosition_mm(filament_data.extruder) + movevalue;
         }
-        else
+        else {
+          feedrate = FILAMENT_UNLOAD_FEEDRATE;
+          movevalue = DGUS_FILAMENT_LOAD_LENGTH_PER_TIME*FILAMENT_UNLOAD_FEEDRATE;
           movevalue = ExtUI::getAxisPosition_mm(filament_data.extruder) - movevalue;
+        }
       }
-      ExtUI::setAxisPosition_mm(movevalue, filament_data.extruder);
+      ExtUI::setAxisPosition_mm_feedrate(movevalue, filament_data.extruder,feedrate);
     }
   }
 #endif
