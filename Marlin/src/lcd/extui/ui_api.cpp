@@ -399,6 +399,13 @@ namespace ExtUI {
     line_to_current_position(manual_feedrate_mm_s.e);
   }
 
+  void setAxisPosition_mm_feedrate(const float position, const extruder_t extruder,feedRate_t fr_mm_s) {
+    setActiveTool(extruder, true);
+
+    current_position.e = position;
+    line_to_current_position(fr_mm_s);
+  }
+
   void setActiveTool(const extruder_t extruder, bool no_move) {
     #if EXTRUDERS > 1
       const uint8_t e = extruder - E0;
