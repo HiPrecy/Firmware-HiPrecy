@@ -1149,7 +1149,17 @@ void MarlinUI::init() {
 void MarlinUI::update() {
   #if ENABLED(SDSUPPORT)
     static bool last_sd_status;
-    const bool sd_status = IS_SD_INSERTED();
+    #if ENABLED(SD_DETECT_FILTER)
+      static uint8_t sd_times = 0;
+      static bool sd_status = false;
+      const bool sd_raw_status = IS_SD_INSERTED();
+      if(sd_raw_status && sd_times<SD_DETECT_FILTER_TIMES) sd_times++;
+      else if(!sd_raw_status && sd_times>0) sd_times--;
+      if(sd_times == SD_DETECT_FILTER_TIMES) sd_status = true;
+      if(sd_times == 0) sd_status = false;
+    #else
+      const bool sd_status = IS_SD_INSERTED();
+    #endif
     if (sd_status != last_sd_status) {
       last_sd_status = sd_status;
       if (sd_status) {
