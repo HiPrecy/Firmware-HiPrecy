@@ -171,6 +171,8 @@
 
 #define SDSS               PA4
 #define SD_DETECT_PIN  	   PB10
+#define SD_DETECT_FILTER
+#define SD_DETECT_FILTER_TIMES 20
 
 //
 // LCD / Controller
