@@ -1090,7 +1090,7 @@ void DGUSScreenVariableHandler::HandleHeaterControl(DGUS_VP_Variable &var, void 
         }
         // Before unloading extrude to prevent jamming
         if (filament_data.purge_length >= 0) {
-          filament_data.purge_length -= movevalue;
+          filament_data.purge_length -= DGUS_FILAMENT_LOAD_LENGTH_PER_TIME;
           movevalue = ExtUI::getAxisPosition_mm(filament_data.extruder) + movevalue;
         }
         else {
