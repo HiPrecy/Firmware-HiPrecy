@@ -52,7 +52,7 @@
 #include "DGUSDisplayDef.h"
 
 #define FILAMENT_LOAD_FEEDRATE 2.0
-#define FILAMENT_UNLOAD_FEEDRATE 15.0
+#define FILAMENT_UNLOAD_FEEDRATE 10.0
 
 // Preamble... 2 Bytes, usually 0x5A 0xA5, but configurable
 constexpr uint8_t DGUS_HEADER1 = 0x5A;
